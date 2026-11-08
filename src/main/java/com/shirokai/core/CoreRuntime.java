@@ -3,6 +3,7 @@ package com.shirokai.core;
 import com.shirokai.core.config.*;
 import com.shirokai.core.titles.*;
 import com.shirokai.core.clans.*;
+import com.shirokai.core.chat.*;
 import com.shirokai.core.module.*;
 import com.shirokai.core.permissions.*;
 import com.shirokai.core.placeholders.PlaceholderService;
@@ -30,6 +31,7 @@ public final class CoreRuntime implements AutoCloseable {
     private PlaceholderService placeholders;
     private TitleService titles;
     private ClanService clans;
+    private MinecraftChat chat;
     private int titleTicks;
     private final Path dataDirectory;
 
@@ -83,8 +85,14 @@ public final class CoreRuntime implements AutoCloseable {
                 clans.onChange(affected->affected.forEach(titles::refreshCached));
             }
         }, () -> {}));
+        modules.register(module("chat",Set.of("storage","permissions"),()->{
+            var chatConfig=ChatConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/chat.json"));
+            chat=new MinecraftChat(server,storage,permissions,running("titles")?titles:null,running("clans")?clans:null,chatConfig,logger);
+            new ChatCommands(()->this).configureVanilla(server.getCommandManager().getDispatcher(),chatConfig.takeVanillaPrivateCommands());
+            logger.info("[chat] Core controla roteamento; desative modules.chat para usar outro proprietário de chat");
+        },()->{}));
         modules.register(module("administration", Set.of("permissions"), () -> {}, () -> {}));
-        for (String id : new String[]{"storage", "permissions", "placeholders", "titles", "profiles", "clans", "administration"}) {
+        for (String id : new String[]{"storage", "permissions", "placeholders", "titles", "profiles", "clans", "chat", "administration"}) {
             modules.start(id, config.enabled(id));
             logger.info("[{}] {}", id, modules.states().get(id));
         }
@@ -97,6 +105,7 @@ public final class CoreRuntime implements AutoCloseable {
             public void stop() throws Exception { stop.run(); }
         };
     }
+    public MinecraftChat chat(){if(!running("chat")||chat==null)throw new IllegalStateException("Chat indisponível");return chat;}
     public ClanService clans() {
         if (!running("clans") || clans == null) throw new IllegalStateException("Módulo clans indisponível");
         return clans;
@@ -106,6 +115,8 @@ public final class CoreRuntime implements AutoCloseable {
         return titles;
     }
     public void playerJoined(java.util.UUID player) {
+        if(running("clans"))clans.membership(player).whenComplete((value,error)->{if(error!=null)logger.warn("[clans] Falha ao carregar associação "+player,error);});
+        if(running("chat"))chat.service().join(player).whenComplete((value,error)->{if(error!=null)logger.warn("[chat] Falha ao carregar perfil "+player,error);});
         if (running("clans")) clans.invitations(player).whenCompleteAsync((invites,error) -> {
             if(error!=null){logger.warn("[clans] Falha ao consultar convites "+player,error);return;}
             var online=server.getPlayerManager().getPlayer(player);
@@ -115,7 +126,7 @@ public final class CoreRuntime implements AutoCloseable {
             if (error != null) logger.warn("[titles] Falha ao carregar perfil " + player, error);
         });
     }
-    public void playerLeft(java.util.UUID player) { if (titles != null) titles.forget(player); if(clans!=null)clans.forget(player); }
+    public void playerLeft(java.util.UUID player) { if (titles != null) titles.forget(player); if(clans!=null)clans.forget(player); if(chat!=null)chat.service().leave(player); }
     public void tick() {
         if (running("titles") && ++titleTicks >= 100) { titleTicks = 0; titles.revalidateCached(); }
     }
@@ -146,7 +157,8 @@ public final class CoreRuntime implements AutoCloseable {
                         FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/titles.json"));
                 ClanConfig clanConfig = clans == null ? null : ClanConfig.load(
                         FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/clans.json"));
-                return new ReloadCandidate(core, catalog, clanConfig);
+                ChatConfig chatConfig=chat==null?null:ChatConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/chat.json"));
+                return new ReloadCandidate(core,catalog,clanConfig,chatConfig);
             } catch (Exception failure) { throw new CompletionException(failure); }
         }, io).whenComplete((candidate, error) -> {
             if (closed) { reloading.set(false); result.completeExceptionally(new IllegalStateException("Servidor encerrando")); return; }
@@ -156,9 +168,12 @@ public final class CoreRuntime implements AutoCloseable {
                     if (error != null) throw new CompletionException(error);
                     if (candidate.core().requiresRestartComparedTo(config))
                         throw new IllegalStateException("Alteração de módulos ou databaseFile exige reinício; configuração ativa preservada");
+                    if(chat!=null&&candidate.chat().takeVanillaPrivateCommands()!=chat.service().config().takeVanillaPrivateCommands())
+                        throw new IllegalStateException("Alteração de takeVanillaPrivateCommands exige reinício");
                     config = candidate.core();
                     if (titles != null) titles.replaceCatalog(candidate.titles());
                     if (clans != null) clans.replaceConfig(candidate.clans());
+                    if(chat!=null)chat.service().replaceConfig(candidate.chat());
                     logger.info("[core] Configuração recarregada com segurança");
                     result.complete(null);
                 } catch (Exception failure) { result.completeExceptionally(failure); }
@@ -167,7 +182,7 @@ public final class CoreRuntime implements AutoCloseable {
         });
         return result;
     }
-    private record ReloadCandidate(CoreConfig core, TitleCatalog titles, ClanConfig clans) {}
+    private record ReloadCandidate(CoreConfig core, TitleCatalog titles, ClanConfig clans, ChatConfig chat) {}
     @Override public void close() throws Exception {
         closed = true;
         io.shutdown();

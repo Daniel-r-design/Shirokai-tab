@@ -1,7 +1,7 @@
 # Clãs nativos — 0.5.0-dev
 
 Núcleo por comandos e menus nativos; sigla integrada ao /perfil como identificação CLAN.
-Estilos avançados, chat de clã e ferramentas administrativas de correção seguem pendentes.
+Estilos avançados, ferramentas administrativas de correção seguem pendentes; chat de clã está integrado ao módulo chat0.6.
 
 ## Regras implementadas
 
@@ -150,3 +150,8 @@ impedindo que uma tela antiga reequipe uma sigla depois da saída. Cache online 
 por eventos do serviço, sem ler SQLite por tick. Desconexão remove cache.
 Dados de clã aparecem no cabeçalho do /perfil mesmo antes de escolher sigla.
 Títulos CLAN continuam proibidos em titles.json: somente pertencimento nativo os produz.
+
+
+/clan chat [mensagem] usa o mesmo gate de mute/ignore/spam do restante do Core;
+sem mensagem, seleciona CLAN. Sair do clã bloqueia envio, sem fallback público.
+Só membros do mesmo UUID de clã recebem. Ver CHAT.md para configurações e limitações.

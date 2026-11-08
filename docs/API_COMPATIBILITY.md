@@ -74,3 +74,16 @@ Menus reutilizam GenericContainerScreenHandler/ScreenHandler vanilla já auditad
 na versãoYarn fixa. Não foram adicionados protocolos personalizados ou mod obrigatório
 no cliente. Teste ClanMenuSmoke exerce handler real com ServerPlayerEntity sintéticos;
 login/rede/renderização de cliente real e runtime LuckPerms continuam não validados.
+
+
+## Atualização0.6
+
+ServerMessageEvents.ALLOW_CHAT_MESSAGE/ALLOW_COMMAND_MESSAGE conferidos no source
+JAR Fabric-message-api da versão fixada. Assinaturas Yarn de SentMessage.of,
+SignedMessage.withoutUnsigned, getSignedContent, MessageType.params,
+ServerPlayerEntity.sendChatMessage e shouldFilterMessagesSentTo auditadas com javap.
+MessageCommand.register bytecode confirmou msg→targets→message e redirects tell/w.
+Detecção de callback usa MessageCommand.class.getName(), válido após remapeamento.
+MessageArgumentType.getMessage/EntityArgumentType.getPlayers usados somente na
+ponte vanilla; exige um destinatário e converte corpo para texto literal.
+Teste captura pacotes no servidor sintético, sem comprovar assinatura criptográfica real.

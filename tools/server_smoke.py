@@ -71,7 +71,7 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         server.wait('Done (')
         server.command('shirokaicore status', 'SQLite=READY')
         server.command('shirokaicore modules', 'administration=RUNNING')
-        server.command('shirokaicore version', 'Shirokai Core 0.5.0-dev')
+        server.command('shirokaicore version', 'Shirokai Core 0.6.0-dev')
         server.command('shirokaicore permissions', 'vanilla-op4')
         server.command('shirokaicore placeholders %shirokai:online%/%shirokai:dollars%', '0/N/D')
         server.command('shirokaicore debug', 'SQLite integrity_check=ok')
@@ -84,6 +84,12 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         checks.append('native clan transactions limits transfer and confirmed disband')
         server.command('clan', '/clan exige um jogador')
         checks.append('clan command rejects console')
+        server.command('shirokai-chat-smoke', 'CHAT_SMOKE_PASS')
+        checks.append('chat transport channels private moderation ignore and literal payloads')
+        server.command('shirokai-chat-alias-smoke', 'CHAT_ALIAS_SMOKE_PASS')
+        server.command('reload', 'DATAPACK_RELOAD_SMOKE_READY')
+        server.command('shirokai-chat-alias-smoke', 'CHAT_ALIAS_SMOKE_PASS')
+        checks.append('vanilla private aliases remain moderated after datapack reload')
         subject = '11111111-1111-1111-1111-111111111111'
         server.command('shirokaicore titles list', 'traveler')
         server.command(f'shirokaicore titles grant {subject} traveler', 'grants={traveler=0}')
@@ -92,6 +98,9 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         server.command(f'shirokaicore titles revoke {subject} traveler', 'grants={}')
         server.command(f'shirokaicore titles grant {subject} traveler', 'grants={traveler=0}')
         server.command('perfil', '/perfil exige um jogador')
+        server.command(f'shirokaicore chat mute {subject} 0 Test', 'mute=Mute[expiresAt=0')
+        server.command(f'shirokaicore chat inspect {subject}', 'mute=Mute[expiresAt=0')
+        checks.append('persistent administrative mute')
         checks += ['title catalog registered', 'permanent and temporary grants', 'revoke persisted', 'profile rejects console']
 
         config_file = runtime / 'config/shirokai-core/core.json'
@@ -117,6 +126,18 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         titles_file.write_text(original_titles)
         config_file.write_text(customized)
         checks.append('invalid titles catalog rejects complete reload atomically')
+        chat_file = runtime / 'config/shirokai-core/chat.json'
+        original_chat = chat_file.read_text()
+        chat_file.write_text('{broken')
+        server.command('shirokaicore reload', 'Shirokai Core:')
+        server.command('shirokaicore placeholders %shirokai:dollars%', 'Unavailable')
+        chat = json.loads(original_chat)
+        chat['takeVanillaPrivateCommands'] = False
+        chat_file.write_text(json.dumps(chat))
+        server.command('shirokaicore reload', 'takeVanillaPrivateCommands exige reinício')
+        server.command('shirokai-chat-alias-smoke', 'CHAT_ALIAS_SMOKE_PASS')
+        chat_file.write_text(original_chat)
+        checks += ['invalid chat config preserves active reload', 'private command ownership change requires restart']
         config['modules']['storage'] = False
         config_file.write_text(json.dumps(config))
         server.command('shirokaicore reload', 'exige reinício; configuração ativa preservada')
@@ -130,7 +151,7 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
     database = runtime / 'shirokai-core/shirokai.db'
     with sqlite3.connect(database) as connection:
         assert connection.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
-        assert connection.execute('PRAGMA user_version').fetchone()[0] == 3
+        assert connection.execute('PRAGMA user_version').fetchone()[0] == 4
         assert connection.execute('SELECT count(*) FROM admin_audit').fetchone()[0] >= 2
     backups = list((runtime / 'shirokai-core/backups').glob('*.db'))
     assert len(backups) == 1
@@ -143,6 +164,9 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         server.command('shirokaicore placeholders %shirokai:dollars%', 'Unavailable')
         server.command('shirokaicore debug', 'SQLite integrity_check=ok')
         server.command(f'shirokaicore titles inspect {subject}', 'grants={traveler=0}')
+        server.command(f'shirokaicore chat inspect {subject}', 'mute=Mute[expiresAt=0')
+        server.command(f'shirokaicore chat unmute {subject}', 'mute=null')
+        checks.append('mute survives server restart and unmute persists')
         checks.append('title grant survives server restart')
     finally:
         server.stop()
@@ -162,6 +186,6 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         assert connection.execute('SELECT count(*) FROM admin_audit').fetchone()[0] >= 2
     checks += ['storage failure isolated from server and placeholders', 'future schema preserved']
 
-result = {'passed': checks, 'count': len(checks), 'not_tested': ['player connections', 'LuckPerms runtime', 'Cobblemon', 'Impactor', 'visual GUI and packets from a real client', 'TAB/scoreboard rendering', 'clan styles and chat']}
+result = {'passed': checks, 'count': len(checks), 'not_tested': ['player connections', 'LuckPerms runtime', 'Cobblemon', 'Impactor', 'visual GUI and packets from a real client', 'TAB/scoreboard rendering', 'clan styles, advanced formatting and mention styling']}
 (reports / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))

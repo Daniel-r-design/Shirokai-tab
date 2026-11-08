@@ -30,3 +30,8 @@ publicação de ambiente ou release estável. Preservar código e histórico rem
 Menus de clã devem usar ClanService.scoped(idExibido), nunca agir silenciosamente
 sobre clã novo a partir de tela antiga. Identificação CLAN exige associação real e
 limpeza transacional em leave/kick/disband. Namespace clan_ é reservado e não concedível.
+
+Chat: docs/CHAT.md. Nunca converter staff/clã indisponível para global silenciosamente.
+Toda rota Core deve usar o mesmo gate. Preservar corpo/assinatura/filtro do chat normal;
+comandos system não devem ser apresentados como mensagens assinadas. Não interpretar
+markup do jogador. A árvore de aliases privados deve continuar moderada após datapack reload.

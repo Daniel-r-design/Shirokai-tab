@@ -46,9 +46,9 @@ public final class SqliteStorage implements AutoCloseable {
         try (Statement s = c.createStatement(); ResultSet rows = s.executeQuery("PRAGMA user_version")) {
             if (!rows.next()) throw new SQLException("Schema não retornado"); version = rows.getInt(1);
         }
-        if (version > 3) throw new SQLException("Banco mais recente que o mod: schema " + version);
-        if (version == 3) return;
-        if (version == 1 || version == 2) {
+        if (version > 4) throw new SQLException("Banco mais recente que o mod: schema " + version);
+        if (version == 4) return;
+        if (version >= 1 && version <= 3) {
             Path backup = file.resolveSibling(file.getFileName() + ".schema" + version + "-" + UUID.randomUUID() + ".bak.db");
             try (PreparedStatement s = c.prepareStatement("VACUUM INTO ?")) { s.setString(1, backup.toString()); s.execute(); }
         }
@@ -64,8 +64,9 @@ public final class SqliteStorage implements AutoCloseable {
                 s.execute("CREATE TABLE title_grants (player_uuid TEXT NOT NULL REFERENCES title_profiles(player_uuid) ON DELETE CASCADE, title_id TEXT NOT NULL, expires_at INTEGER NOT NULL DEFAULT 0 CHECK(expires_at>=0), PRIMARY KEY(player_uuid,title_id))");
                 s.execute("CREATE TABLE chat_identifications (player_uuid TEXT NOT NULL REFERENCES title_profiles(player_uuid) ON DELETE CASCADE, slot INTEGER NOT NULL CHECK(slot IN (0,1)), title_id TEXT NOT NULL, PRIMARY KEY(player_uuid,slot), UNIQUE(player_uuid,title_id))");
                 }
-                ClanSchema.migrate(s);
-                s.execute("PRAGMA user_version=3");
+                if(previous < 3)ClanSchema.migrate(s);
+                ChatSchema.migrate(s);
+                s.execute("PRAGMA user_version=4");
             }
             return null;
         });

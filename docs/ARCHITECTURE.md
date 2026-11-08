@@ -71,3 +71,17 @@ anteriores em disband. TitleService recebe provedor dinâmico/refresh por interf
 funcionais, sem depender do serviço de clãs; catálogo efetivo é específico do jogador.
 ClanTitle deriva nome/display de ClanSnapshot. Persistência verifica associação real
 em save e limpa seleção na própria transação de leave/kick/disband, com revisão CAS.
+
+
+## Chat0.6
+
+ChatService é núcleo sem Minecraft, com Audience/Participant e Sink/Envelope;
+política/cache/gates ficam na thread do servidor. ChatRepository roda SQL pelo
+worker transacional; ChatSchema mantém DDL4 e storage cria backup antes de upgrade.
+MinecraftChat adapta jogadores/posições/clã e transporte: SentMessage preservado
+para mensagem normal, GameMessage literal para comandos. Sender label é separado
+do corpo, com hover/sugestão somente no remetente. Sem SQL no roteamento por mensagem.
+ServerMessageEvents bloqueia broadcast original e impede duplicação; aliases vanilla
+são reconhecidos por referência de classe remapeável e configurados novamente ao
+recriar árvore de comandos. ChatConfig participa do snapshot de reload atômico;
+ownership exige reinício. Mutes/ignore/canal persistem; reply e gates são de sessão.

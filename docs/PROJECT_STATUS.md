@@ -1,93 +1,103 @@
-# Estado real do projeto — 0.5.0-dev
+# Estado real do projeto — 0.6.0-dev
 
 ## Situação
 
-Menus de clãs, matriz configurável de ações e identificação nativa de clã no /perfil
-implementados. Projeto completo NÃO entregue: chat/moderação, estilos avançados,
-TAB, scoreboard visual, integrações completas e validação com cliente real pendentes.
-SchemaSQLite3 preservado sem migração de versão nesta etapa.
+Chat e moderação implementados no núcleo da fase5, com títulos/perfil/clãs preservados.
+Projeto completo NÃO entregue. Motor de estilos, menções avançadas, TAB, scoreboard
+visual, integrações completas e validação cliente/assinaturas reais permanecem pendentes.
+SQLite schema4 migra versões1/2/3 com backup consistente e preservação dos sistemas anteriores.
 
-## Implementado
+## Implementado nesta etapa
 
-- /clan e /clan menu abrem container vanilla9x6, sem mod obrigatório no cliente.
-- Páginas de clã, membros/cargos, convites recebidos, convite para jogadores online,
-  gestão do membro, solicitação de transferência e confirmação de exclusão.
-- Convite pode ser aceito/recusado no menu com validação transacional existente.
-- Transferir exige confirmação do líder e aceitação separada pelo destinatário.
-- Excluir exige duas telas/ações e confirmação no banco; cancelar remove confirmação persistente.
-- Itens são ícones, sem transferências de inventário; ações de outro usuário, tela
-  fechada, slots inválidos, swaps/shift/clone/throw/craft são bloqueadas.
-- Ações de tela são vinculadas ao ID do clã exibido. ClanRepository.scoped valida
-  associação e ID na mesma transação; tela antiga não atua sobre novo clã.
-- roleActions em clans.json configura invite/kick/promote/demote/rename/tag por cargo.
-  Liderança e hierarquia permanecem invariantes; autorização usa config/cargo atuais.
-- ClanTitle deriva título CLAN do ID/associação/sigla nativos, sem concessão artificial.
-- /perfil mostra clã atual e oferece sigla como título visual único ou uma das duas
-  identificações totais de chat. Ordem ROLE→SPECIAL→CLAN e prioridades preservadas.
-- Leave/kick/disband limpam a seleção de clã na mesma transação da associação.
-  SaveTitles também valida associação real e sigla no SQL, bloqueando reequipes antigos/forjados.
-- Nome/display da identificação acompanha rename/tag, mantendo ID estável.
-- Cache de associação online atualiza por eventos do serviço e limpa no disconnect;
-  não faz SQLite por tick. Títulos carregam associação antes de view/equip.
+- ChatConfig validado e preservado em chat.json, com reload atômico core/titles/clans/chat.
+- Canais global/local/clã/staff e seleção persistente, por comandos e entrada normal.
+- LOCAL usa mesma dimensão e distância3D; CLAN exige UUID igual; STAFF checa remetente
+  e destinatário em cada envio. Perda de acesso nunca converte conteúdo para global.
+- Privados, reply, ignore persistente e aliases, sem aceitar remetente arbitrário.
+- Exibição das duas identificações escolhidas; não adiciona cargo extra automaticamente.
+- Mute permanente/temporário, cooldown compartilhado, duplicação, tamanho/caracteres,
+  filtro literal normalizado, bypasses explícitos e logs de rejeição com limite de frequência.
+- Corpo do jogador literal: nenhum parser MiniMessage/JSON/eventos. Hover/sugestão
+  de conversa somente no cabeçalho; corpo não herda clique.
+- Mensagem normal mantém SignedMessage, assinatura/corpo/filtro, alterando somente
+  nome decorado de apresentação via MessageType.CHAT. Comandos Core usam mensagens system.
+- /say e /me de jogadores passam pelo mesmo roteamento/gate; console mantém anúncios vanilla.
+- /msg vanilla reconhecido por classe remapeável pode ser assumido via configuração;
+  redirects tell/w compartilham callback moderado. Reaplica após registro de datapack reload.
+- Comandos de terceiros preservados; caminhos externos não são presumidos como moderados.
+- Administração: chat inspect/mute/unmute por UUID, com permissões próprias e auditoria
+  atômica; falha de auditoria reverte a mutação.
+- Perfil ainda carregando/falhou não pode enviar e não recebe conteúdo seletivo.
+- Cache de sessão sem SQLite por mensagem/tick; canal/ignore/mute persistem e reply/spam
+  limpam no disconnect. Mute/ignore não mudam canal de sessão ao alterar default no JSON.
 
-## Verificações executadas
+## Validação final executada
 
 | Verificação | Resultado |
 |---|---|
-| python3 tools/gradle_cloud.py build smokeClasses | PASSOU, Java21 e remap do JAR |
-| JUnit | 45 executados, 0 falhas, 0 erros, 0 ignorados |
-| python3 tools/server_smoke.py --accept-eula | 27 verificações funcionais passaram em três boots reais |
-| ClanMenuSmoke | CLAN_MENU_SMOKE_PASS |
-| Menu: convite/membro/cargo | Aceitação, listagem e promoção passaram |
-| Menu: transferência | Não solicita antes de confirmar; sucessor aceita separadamente |
-| Menu: exclusão | Primeiro clique não exclui; cancelar invalida pedido; segundo fluxo confirmado exclui |
-| Itens/ownership | Outro usuário e transferências bloqueados; inventário preservado; tela fechada inutilizável |
-| Escopo antigo | Troca de clã faz mutação antiga falhar sem alterar associação nova |
-| Matriz de ações | Regras configuráveis aplicadas sem permitir operar contra líder/pares |
-| Identificação CLAN | Duas vagas compartilhadas, título único e outsider rejeitado |
-| Persistência | Leave/kick/disband limpam tag atomicamente e save posterior forjado é rejeitado |
-| Regressões | Perfil, núcleo de clãs, reload, backup, restart e schema futuro passaram |
-| Artefato | ClanMenu presente e mod de teste ausente no JAR0.5 |
-| Cliente real/login/LuckPerms Fabric | NÃO EXECUTADOS |
+| python3 tools/gradle_cloud.py build smokeClasses | PASSOU, Java21, testes e JAR remapeado |
+| JUnit | 62 executados; 0 falhas; 0 erros; 0 ignorados |
+| python3 tools/server_smoke.py --accept-eula | 33 verificações funcionais passaram em três boots Fabric reais |
+| ChatSmoke | CHAT_SMOKE_PASS: transporte real com pacotes capturados e jogadores sintéticos |
+| LOCAL/GLOBAL/CLAN/STAFF | Distância/dimensão/associação/permissões e destinatários testados |
+| Staff revogado | Mensagem negada, sem fallback público nem recepção por usuário revogado |
+| Privado/ignore/reply | Só remetente/destinatário, ignore respeitado, peer removido no disconnect |
+| Mute e bypass | Rotas compartilhadas bloqueadas; bypass explícito não ignora limites obrigatórios |
+| Payload | Corpo/UUID preservados; duas tags no cabeçalho; markup literal e sem clique no corpo |
+| Aliases vanilla | Wrapper e redirects conferidos antes/depois de END_DATA_PACK_RELOAD |
+| Admin/restart | Mute permanente persistido no servidor, consultado após restart e removido |
+| Migração3→4 | Preserva prefs/títulos/clãs e backup legível schema3 |
+| Auditoria | Falha reverte mute; regressões de títulos/clãs preservadas |
+| Reload | Chat inválido preserva snapshot; trocar ownership exige reinício; canal não muda por mute/ignore |
+| Regressões | Menus, clãs, títulos, backup, restart, schema futuro e shutdown passaram |
+| JAR | Versão0.6.0-dev e classes do mod de teste ausentes |
+| Cliente real/assinatura criptográfica/LuckPerms Fabric | NÃO EXECUTADOS |
 | Cobblemon/Impactor/Dex/PAPI | Ainda não implementados/validados |
 
-41 testes anteriores preservados; ClanIntegrationTest(4) adicionada.
-Smokes usam servidor Fabric real com ServerPlayerEntity sintéticos/conexão sem
-transporte e provedores de permissões de teste. Não comprovam aparência, rede,
-autenticação ou contextos reais de LuckPerms. Não foi desativado online-mode.
+45 testes anteriores preservados. Adicionados ChatServiceTest(10),
+ChatConfigAndGateTest(3) e ChatRepositoryTest(4), total17 novos testes.
+ChatSmoke usa SignedMessage.ofUnsigned e conexão sem transporte; confirma métodos,
+campos de pacote, corpo e destinatários, NÃO autenticação/criptografia cliente.
+Preservação de assinatura no caminho real usa API vanilla auditada, mas exige teste
+com cliente autenticado antes de afirmar compatibilidade completa de chat assinado.
 
 ## Artefato e evidências
 
-JAR: `build/libs/shirokai-core-0.5.0-dev.jar`
+JAR: `build/libs/shirokai-core-0.6.0-dev.jar`
 
-SHA-256: `f5cbdfdc9fc0e4008aa1d8374bcae03754a5cc8041950d66244b48ceaa7fa76f`
+SHA-256: `0ac1438f06723c2a39d3106d0c1b62dc22e8ed911a71446e35680aac39d01bde`
 
 JUnit: `build/reports/tests/test/index.html`.
 Resultado: `build/server-smoke/result.json`.
 Logs: `build/server-smoke/first-boot.log`, `restart.log`, `storage-failure.log`.
-Source set smoke nunca é incluído no artefato de produção. Todos os servidores
-foram parados com stop e os dados temporários dos smokes são removidos.
+Smokes separados em src/smoke e não incluídos no artefato final.
+Todos os servidores de teste foram parados com stop; dados temporários removidos.
 Artefato de desenvolvimento, NÃO release estável.
 
-## Pendências
+## Limitações restantes
 
-Editor textual gráfico de nome/sigla (atuais comandos mostrados no painel), listagem
-gráfica de convites enviados, estilos por permissão, ferramentas administrativas de
-clãs, chat integrado a moderação/ignore/mute. Cargo real/dados do treinador no perfil,
-eventos LuckPerms específicos, integrações e renderizadores futuros continuam no plano.
-Títulos CLAN não podem ser declarados no JSON nem concedidos pelo admin; só associação real.
-Matriz roleActions substitui todas as regras quando fornecida; campo ausente usa defaults.
-Ainda há falha observada na rede de chaves Yggdrasil; login online não validado.
+- Formatos atuais decoram remetente com texto literal. Estilos HEX/gradientes,
+  menções, grupos/prefixos/sufixos avançados e templates de corpo dependem do motor futuro.
+- Mensagens por comandos Core são system e não reportáveis como chat assinado.
+  /say,/me podem ter aparência de chat normal por redirecionamento ao canal.
+- Outro mod pode possuir comandos/eventos próprios. takeVanillaPrivateCommands=false
+  deixa vanilla privado independente; não afirmar cobertura de moderação nesses caminhos.
+- Cooldown/reply são de sessão; ignore/canal/mute persistem. Registros vencidos podem
+  permanecer para consulta; ausência de perfil carregado é bloqueada explicitamente.
+- Cliente conectado, login/Yggdrasil, LuckPerms Fabric/contextos reais e carga com
+  múltiplos clientes não validados. online-mode não foi desativado para contornar rede.
+- Estilos/administração avançada/editor gráfico de clãs, dados de treinador/cargo real
+  no perfil, TAB/scoreboard e integrações externas continuam no plano.
 
 ## Arquivos desta etapa
 
-ClanMenu, ClanPolicy, ClanConfig/Repository/Service/Commands, ClanTitle, TitleDefinition/
-Catalog/Rules/Service, ProfileMenu/Commands, CoreRuntime, SqliteStorage.saveTitles,
-ClanIntegrationTest, ClanMenuSmoke/ProfileSmoke, tools/server_smoke.py, build.gradle e docs.
-Não foram adicionadas dependências externas ou alterados arquivos de terceiros.
+chat/*, administration/ChatAdminCommands/AdminCommands, storage/ChatSchema e SqliteStorage,
+CoreRuntime/ShirokaiCore/CoreConfig, ClanCommands, build.gradle, testes chat/*,
+smoke/ChatSmoke/ProfileSmoke, tools/server_smoke.py e documentação, incluindo CHAT.md.
+Nenhuma dependência externa nova ou configuração de terceiro foi adicionada/modificada.
 
 ## GitHub e continuidade
 
-Progresso anterior está na branch main (7a7eab1 e 89117d0). Esta etapa será salva em
-commit separado conforme autorização persistente do usuário, sem reescrever histórico.
-Nenhuma publicação de ambiente/release foi solicitada ou realizada. Ver NEXT_STEPS.
+Base anterior salva em main (3f2c959). Esta etapa usa um commit separado, conforme
+autorização persistente do usuário. Nenhuma publicação de ambiente/release foi solicitada
+ou realizada. Próximos passos em NEXT_STEPS, uso em CHAT, CLANS e TITLES.

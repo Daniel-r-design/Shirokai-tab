@@ -1,4 +1,4 @@
-# Permissões 0.5.0-dev
+# Permissões 0.6.0-dev
 
 LuckPerms é a fonte de verdade quando presente e inicializado. O adaptador usa API 5.4,
 usuário carregado e dados de permissão com contextos atuais. Não retém resultado de
@@ -54,3 +54,14 @@ roleActions em clans.json controla invite/kick/promote/demote/rename/tag por car
 interno. Não concede grupos LuckPerms. Transferência/exclusão só por líder e com
 confirmação; regras de hierarquia e clã da tela são reconferidas na transação.
 Identificação CLAN deriva de associação nativa, nunca de concessão administrativa.
+
+
+## Chat0.6
+
+shirokaicore.chat.staff é requisito padrão para enviar E receber STAFF, revalidado
+em cada envio. channelPermissions em chat.json configura requisitos dos demais canais.
+Global/local/clã/privado são públicos por default, com associação nativa exigida para CLAN.
+shirokaicore.command.chat.inspect/mute/unmute autorizam administração separadamente.
+shirokaicore.chat.bypass.mute/cooldown/filter/ignore são bypasses explícitos, nunca
+automáticos. Cooldown inclui duplicação; limites de tamanho/caracteres permanecem.
+Comandos de jogador não aceitam remetente arbitrário e não elevam permission level.

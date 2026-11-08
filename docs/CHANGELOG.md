@@ -1,5 +1,16 @@
 # Histórico
 
+## 0.6.0-dev — chat e moderação
+
+- Canais global/local/clã/staff com destinatários, permissões e distância/dimensão.
+- Privados/reply/ignore, duas identificações escolhidas e corpo literal.
+- Roteamento de chat normal preservando SignedMessage e filtro, com decoração do remetente.
+- Gates compartilhados de mute/spam/cooldown/duplicação/tamanho/filtro e bypasses explícitos.
+- Schema4 com canal/ignore/mute persistidos, backup de migração e auditoria transacional.
+- Ownership de /msg vanilla por configuração e aliases preservados em reload de datapacks.
+- Administração de mute temporário/permanente e logs de rejeição limitados.
+- Regressão: ações de mute/ignore não trocam canal após mudar default no JSON.
+
 ## 0.5.0-dev — menus e identificação de clãs
 
 - Menus nativos para clã, membros/cargos, convite/aceitação e confirmações.

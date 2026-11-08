@@ -2,31 +2,33 @@
 
 ## Estado atual
 
-0.5.0-dev adiciona menus de clãs, matriz configurável de ações e identificação CLAN
-real no perfil. Schema3 permanece. Proteções de escopo de menu e limpeza de seleção
-na saída/expulsão/exclusão são transacionais. Ver CLANS, TITLES e PROJECT_STATUS.
+0.6.0-dev adiciona chat global/local/clã/staff, privados/reply/ignore e moderação,
+com schema4. Mantém perfil/títulos/clãs e seus testes. Aliases privados vanilla são
+controlados por configuração, com reaplicação após reload de datapacks. Ver CHAT e PROJECT_STATUS.
 
 ## Próxima implementação
 
-1. Chat/canais/moderação (fase5), incluindo chat de clã, duas identificações totais,
-   permissões, cooldown, mute, ignore e texto do jogador separado de templates administrativos.
-2. Ferramentas administrativas separadas para inspeção/correção de clãs e diagnóstico.
-3. Motor de estilos compartilhado com cores/HEX/gradientes/animações e permissões:
-   preservar estilo salvo quando VIP expirar e aplicar fallback permitido.
-4. Editor gráfico textual de nome/sigla e lista gráfica de convites enviados.
-   Atualmente nome/sigla usam comandos e convites recebidos possuem GUI funcional.
-5. Testar menus com cliente Minecraft real e LuckPerms Fabric, incluindo líder offline/contextos.
+1. Motor de estilos central: cores/HEX/gradientes, templates seguros e animações
+   de superfícies atualizáveis; chat permanece estático por mensagem.
+2. TAB próprio (fase6): header/footer, título escolhido, layouts, ordenação real,
+   atualização incremental e ownership de teams. Depois scoreboard visual (fase7).
+3. Auditar e integrar APIs reais de Cobblemon1.8.3, LuckPerms Fabric, Impactor, Dex
+   e Fabric Placeholder API. Não produzir saldos/dados fictícios.
+4. Concluir estilos/personalização de clãs, editor textual gráfico, enviados e
+   administração de correção; cargo real/treinador no perfil.
+5. Chat: menções estilizadas, prefixo/sufixo/estilos por grupo no motor compartilhado,
+   validação de cliente real/assinaturas e coexistência com mods que controlam chat.
 
 ## Pendências preservadas
 
-Cargo real/dados do treinador no perfil, condições avançadas, eventos LuckPerms
-específicos, Cobblemon1.8.3, Impactor, Shirokai Dex, Fabric Placeholder API.
-Títulos atuais validam em ações/leitura e a cada100ticks; clã usa cache atualizado
-por eventos do serviço sem SQL por tick. Não criar seleção visual separada para TAB/scoreboard.
+Cliente Minecraft conectado/login online/LuckPerms Fabric real não validados.
+Dev server registrou falha na busca de chaves Yggdrasil; não desativar autenticação
+para mascarar rede. Smokes de jogadores sintéticos validam métodos/packets capturados,
+não uma sessão criptograficamente autenticada. Nenhuma funcionalidade restante foi descartada.
 
-Dev server registrou falha na busca de chaves Yggdrasil; login online não foi validado.
-Não desativar autenticação para mascarar rede. Testes com jogadores sintéticos validam
-handlers, não rede/renderização cliente. Depois: TAB, scoreboard visual, integrações e testes completos.
+Quando takeVanillaPrivateCommands=false ou comando de terceiro é preservado, não
+assumir que o Core modera esse caminho externo. Um único proprietário de chat deve
+ser escolhido pelo administrador. Mudança desse ownership exige reinício.
 
-O usuário autorizou salvar progresso no GitHub; manter commits e main sincronizados
-sem reescrever histórico. Não publicar ambiente ou release estável automaticamente.
+Push continua autorizado: salvar commits em main sem reescrever histórico.
+Não publicar ambiente ou release estável automaticamente.

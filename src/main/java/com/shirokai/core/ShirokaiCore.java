@@ -2,6 +2,8 @@ package com.shirokai.core;
 
 import com.shirokai.core.administration.AdminCommands;
 import com.shirokai.core.profiles.ProfileCommands;
+import com.shirokai.core.chat.ChatCommands;
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.api.ModInitializer;
@@ -22,6 +24,7 @@ public final class ShirokaiCore implements ModInitializer {
             commands.register(dispatcher);
             new ProfileCommands(() -> runtime).register(dispatcher);
             new com.shirokai.core.clans.ClanCommands(() -> runtime).register(dispatcher);
+            new ChatCommands(()->runtime).register(dispatcher);
         });
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             try { runtime = new CoreRuntime(server, LOGGER); }
@@ -32,6 +35,16 @@ public final class ShirokaiCore implements ModInitializer {
                 try { runtime.close(); } catch (Exception failure) { LOGGER.error("[core] Falha ao encerrar serviços", failure); }
                 runtime = null;
             }
+        });
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message,sender,params)->{
+            if(runtime==null||!runtime.config().enabled("chat"))return true;
+            if(!runtime.running("chat")){sender.sendMessage(net.minecraft.text.Text.literal("Chat indisponível"),false);return false;}
+            return runtime.chat().signed(sender,message);
+        });
+        ServerMessageEvents.ALLOW_COMMAND_MESSAGE.register((message,source,params)->{
+            if(source.getPlayer()==null||runtime==null||!runtime.config().enabled("chat"))return true;
+            if(!runtime.running("chat")){source.sendError(net.minecraft.text.Text.literal("Chat indisponível"));return false;}
+            return runtime.chat().signed(source.getPlayer(),message);
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             if (runtime != null) runtime.playerJoined(handler.player.getUuid());

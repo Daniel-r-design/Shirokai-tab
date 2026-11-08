@@ -18,6 +18,8 @@ public final class ClanCommands {
         if(dispatcher.getRoot().getChild("clan")!=null){org.slf4j.LoggerFactory.getLogger("shirokai-core").warn("[clans] /clan já existe; comando do Core não registrado");return;}
         var root=literal("clan").executes(c->openMenu(c.getSource()));
         root.then(literal("menu").executes(c->openMenu(c.getSource())));
+        root.then(literal("chat").executes(c->new com.shirokai.core.chat.ChatCommands(runtime).channel(c.getSource(),com.shirokai.core.chat.Channel.CLAN,null))
+            .then(argument("message",StringArgumentType.greedyString()).executes(c->new com.shirokai.core.chat.ChatCommands(runtime).channel(c.getSource(),com.shirokai.core.chat.Channel.CLAN,StringArgumentType.getString(c,"message")))));
         root.then(literal("info").executes(c->execute(c.getSource(),(service,id)->service.own(id))));
         root.then(literal("members").executes(c->execute(c.getSource(),(service,id)->service.own(id))));
         root.then(literal("create").then(argument("name",StringArgumentType.greedyString()).executes(c->execute(c.getSource(),(service,id)->{

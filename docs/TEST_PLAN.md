@@ -80,3 +80,17 @@ ClanMenuSmoke: aceitar convite no menu, listar membro, promover, pedir transfer�
 somente após confirmar, aceitar pelo sucessor, pedido de exclusão em duas etapas,
 cancelamento que invalida pedido, exclusão final, menu fechado e preservação dos itens.
 Runner exige CLAN_MENU_SMOKE_PASS; não substitui teste visual com cliente conectado.
+
+
+## Suítes0.6
+
+ChatServiceTest: local por dimensão/distância, global/clã/staff, perda de permissão
+sem fallback, ignore/privado/reply, mute/unmute/bypass, duas identificações, corpo literal,
+perfil ausente e regressão do canal padrão após reload.
+ChatConfigAndGateTest: JSON e arquivos preservados, cooldown, duplicação, controles,
+normalização/filtro e bypass. ChatRepositoryTest: persistência, expiração, rollback
+em auditoria e upgrade3→4 preservando prefs/títulos/clãs e backup legível.
+ChatSmoke: métodos de transporte vanilla reais, pacotes capturados, destinatários,
+tags e corpo, ignore/mute, perda de staff. Fixtures usam SignedMessage.ofUnsigned:
+não validam criptografia/login cliente. Smoke de aliases roda antes/depois da conclusão
+END_DATA_PACK_RELOAD; script também testa mute persistente/restart/unmute e reload inválido.

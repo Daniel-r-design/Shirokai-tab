@@ -31,6 +31,7 @@ public final class ProfileSmoke implements ModInitializer {
     private boolean running;
     @Override public void onInitialize() {
         new ClanSmoke().onInitialize();
+        new ChatSmoke().onInitialize();
         new ClanMenuSmoke(this::until).onInitialize();
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             tick++;
@@ -60,13 +61,14 @@ public final class ProfileSmoke implements ModInitializer {
         var result = new CompletableFuture<Void>(); waits.add(new Wait(condition, tick + 100, result)); return result;
     }
     private static void check(boolean value, String error) { if (!value) throw new AssertionError(error); }
-    static ServerPlayerEntity player(MinecraftServer server, String name) {
+    static ServerPlayerEntity player(MinecraftServer server,String name){return player(server,name,packet->{});}
+    static ServerPlayerEntity player(MinecraftServer server, String name, java.util.function.Consumer<net.minecraft.network.packet.Packet<?>> capture) {
         var profile = new GameProfile(UUID.randomUUID(), name);
         var player = new ServerPlayerEntity(server, server.getOverworld(), profile, SyncedClientOptions.createDefault());
         var connection = new ClientConnection(NetworkSide.SERVERBOUND) {
-            @Override public void send(Packet<?> packet) { }
-            @Override public void send(Packet<?> packet, PacketCallbacks callbacks) { }
-            @Override public void send(Packet<?> packet, PacketCallbacks callbacks, boolean flush) { }
+            @Override public void send(Packet<?> packet) { capture.accept(packet); }
+            @Override public void send(Packet<?> packet, PacketCallbacks callbacks) { capture.accept(packet); }
+            @Override public void send(Packet<?> packet, PacketCallbacks callbacks, boolean flush) { capture.accept(packet); }
             @Override public boolean isOpen() { return true; }
             @Override public SocketAddress getAddress() { return new InetSocketAddress("127.0.0.1", 0); }
         };
