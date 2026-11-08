@@ -1,0 +1,50 @@
+plugins {
+    id 'fabric-loom' version '1.10.5'
+    id 'maven-publish'
+}
+version = '0.3.0-dev'
+group = 'com.shirokai'
+base { archivesName = 'shirokai-core' }
+repositories { mavenCentral() }
+dependencies {
+    minecraft 'com.mojang:minecraft:1.21.1'
+    mappings 'net.fabricmc:yarn:1.21.1+build.3:v2'
+    modImplementation 'net.fabricmc:fabric-loader:0.16.14'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.116.17+1.21.1'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.xerial:sqlite-jdbc:3.49.1.0'
+    include 'org.xerial:sqlite-jdbc:3.49.1.0'
+    compileOnly 'net.luckperms:api:5.4'
+    testImplementation 'net.luckperms:api:5.4'
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) }; withSourcesJar() }
+tasks.withType(JavaCompile).configureEach { options.release = 21; options.encoding = 'UTF-8' }
+processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
+test { useJUnitPlatform() }
+sourceSets {
+    smoke {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+tasks.named('runServer') {
+    standardInput = System.in
+    if (project.hasProperty('profileSmoke')) {
+        dependsOn tasks.named('smokeClasses')
+        classpath += sourceSets.smoke.runtimeClasspath
+    }
+}
+loom {
+    mods {
+        'shirokai-core' { sourceSet sourceSets.main }
+        if (project.hasProperty('profileSmoke')) {
+            'shirokai-profile-smoke' { sourceSet sourceSets.smoke }
+        }
+    }
+    runs {
+        server { runDir project.findProperty('shirokaiRunDir') ?: 'run' }
+    }
+}

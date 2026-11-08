@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "shirokai-profile-smoke",
+  "version": "1.0.0",
+  "name": "Shirokai isolated profile tests",
+  "environment": "server",
+  "entrypoints": {"main": ["com.shirokai.smoke.ProfileSmoke"]},
+  "depends": {"shirokai-core": "*", "fabric-api": "*"}
+}

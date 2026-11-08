@@ -1,0 +1,67 @@
+# Configuração 0.3.0-dev
+
+Arquivo real: `config/shirokai-core/core.json`, relativo ao diretório do servidor.
+Criado somente se ausente. Arquivos existentes, inclusive inválidos, não são sobrescritos.
+
+```json
+{
+  "schemaVersion": 1,
+  "modules": {
+    "storage": true,
+    "permissions": true,
+    "placeholders": true,
+    "administration": true,
+    "titles": true,
+    "profiles": true
+  },
+  "databaseFile": "shirokai.db",
+  "unavailablePlaceholder": "N/D"
+}
+```
+
+`schemaVersion` é obrigatório e deve ser o número inteiro 1. Campos opcionais ausentes
+recebem defaults em memória, sem reescrever o arquivo. Campos desconhecidos, tipos
+incorretos, caminhos de banco com diretórios e JSON inválido são rejeitados com diagnóstico.
+Limite: 64 KiB. Versões diferentes são rejeitadas até haver migração explicitamente implementada.
+
+`databaseFile`: somente nome .db, até 64 caracteres antes da extensão, sem `..`.
+Dados ficam em `shirokai-core/<databaseFile>` no diretório do servidor.
+Backups ficam em `shirokai-core/backups/`; não substituem arquivos existentes.
+
+## Reload
+
+`/shirokaicore reload` lê e valida no worker de IO e publica um snapshot imutável
+na thread do servidor. `unavailablePlaceholder` aceita alteração a quente.
+Mudanças em `modules` ou `databaseFile` exigem reinício: reload as rejeita integralmente,
+preservando o snapshot ativo. JSON inválido também preserva o estado ativo.
+No próximo startup, configuração inválida impede o runtime do Core de iniciar;
+o servidor Minecraft continua e o console pode usar status/version para diagnóstico.
+
+O módulo administration depende de permissions; se a dependência não iniciar, fica BLOCKED.
+`RUNNING` do módulo storage significa worker iniciado; o status SQLite separado informa
+STARTING/READY/FAILED. Uma falha de banco não interrompe módulos independentes.
+
+## Comandos implementados
+
+- `/shirokaicore status`: versão, lifecycle e prontidão/fila SQLite.
+- `/shirokaicore version`: versão do mod.
+- `/shirokaicore modules`: estados dos módulos registrados.
+- `/shirokaicore permissions`: provedor de permissões.
+- `/shirokaicore reload`: reload seguro, sem trocar banco ou módulos ativos.
+- `/shirokaicore debug`: SQLite integrity_check fora da thread do servidor.
+- `/shirokaicore backup`: snapshot consistente via VACUUM INTO.
+- `/shirokaicore placeholders [template]`: lista ou resolve placeholders nativos.
+
+Ações administrativas bem-sucedidas reload/backup são auditadas no SQLite quando
+storage está ativo. Falhas de auditoria são registradas no log. Não há integração
+Fabric Placeholder API ainda. Placeholders implementados: `%shirokai:online%`,
+`%shirokai:player%`, `%shirokai:uuid%`. Tokens indisponíveis usam fallback; substituição
+é literal e não recursiva, sem interpretar markup, click events ou comandos.
+
+titles.json é funcional: ver TITLES.md. Ele participa do reload junto de core.json;
+se qualquer arquivo for inválido, ambos os snapshots ativos são preservados.
+Novas chaves de módulos ausentes em core.json antigo recebem default true em memória;
+não reescrevemos a configuração personalizada. titles depende de storage/permissions;
+profiles depende de titles. Desabilitar exige reinício.
+Placeholders adicionais: selected_title, chat_tag_1 e chat_tag_2 do namespace shirokai.
+Ainda não existem tab.json, scoreboard.json, chat.json e clans.json funcionais.

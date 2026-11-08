@@ -1,0 +1,59 @@
+# Auditoria de compatibilidade
+
+## Confirmado por consulta a fontes
+
+- Java local: OpenJDK 21.0.13.
+- Maven Fabric lista Loom 1.10.5, Loader 0.16.14 e Fabric API 0.116.17+1.21.1.
+- Build declara Minecraft 1.21.1 e Yarn 1.21.1+build.3. Resultado do build no PROJECT_STATUS.
+- Fonte oficial LuckPerms expõe `getUserManager`, `getEventBus`, `getContextManager`.
+  Isso NÃO confirma ainda a versão de runtime Fabric nem implementa integração.
+- README oficial da branch 1.21 do TextPlaceholderAPI documenta `%modid:type%`
+  e `%modid:type/data%`. Registro e resolução ainda precisam de auditoria de código.
+
+## Não confirmado
+
+- Cobblemon 1.8.3: consulta a `api.modrinth.com` bloqueada pelo proxy (CONNECT 403).
+  Não afirmar compatibilidade binária nem substituir silenciosamente por outra versão.
+- Impactor: URL candidata `ImpactorMC/Impactor/main/README.md` retornou 404.
+  Confirmar repositório/documentação oficial e APIs para moedas `impactor:dollars` e `impactor:tokens`.
+- Shirokai Dex, dexrewards e cobbledollars: sem artefatos ou código no checkout.
+- LuckPerms Fabric: validar distribuição para MC 1.21.1, assinatura e callbacks da versão escolhida.
+- SQLite: driver, versão e política de empacotamento ainda não definidos.
+
+## Fontes consultadas
+
+- https://maven.fabricmc.net/net/fabricmc/fabric-loom/maven-metadata.xml
+- https://maven.fabricmc.net/net/fabricmc/fabric-loader/maven-metadata.xml
+- https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml
+- https://raw.githubusercontent.com/LuckPerms/LuckPerms/master/api/src/main/java/net/luckperms/api/LuckPerms.java
+- https://raw.githubusercontent.com/Patbox/TextPlaceholderAPI/1.21/README.md
+
+Não usar fontes de branch móvel como evidência de compatibilidade de uma versão específica.
+Nenhuma integração externa foi implementada ou testada nesta etapa.
+
+
+## Atualização 0.2.0-dev
+
+- Build e bootstrap operacional confirmados no Fabric1.21.1/Loader0.16.14/API0.116.17.
+- CommandRegistrationCallback.EVENT e ServerLifecycleEvents SERVER_STARTING/SERVER_STOPPED
+  conferidos nos source JARs das dependências exatas e exercitados no servidor real.
+- SQLite JDBC3.49.1.0 obtido do Maven Central e incluído via Loom include. SQL real
+  VACUUM INTO, WAL, user_version e rollback exercitados nos testes. Driver carregou no dev server.
+- LuckPerms API5.4 source JAR Maven Central auditado. getUserManager/getUser,
+  getCachedData/getPermissionData/checkPermission e Tristate usados e compilados.
+  Teste de contrato com proxies verifica revogação, UNDEFINED e usuário ausente;
+  não equivale a testar a distribuição LuckPerms Fabric em runtime.
+- Gson2.10.1 usa leitor estrito e adapter JsonElement para não aceitar JSON leniente.
+- Nenhum adaptador Impactor/Cobblemon/Dex/PAPI foi implementado ainda.
+
+
+## Atualização 0.3.0-dev
+
+Assinaturas Yarn1.21.1+build.3 conferidas com javap antes do uso:
+GenericContainerScreenHandler(type,syncId,PlayerInventory,Inventory,rows), onSlotClick,
+quickMove, canUse, onClosed; SimpleNamedScreenHandlerFactory; DataComponentTypes
+CUSTOM_NAME/LORE; LoreComponent(List<Text>); ServerPlayerEntity.openHandledScreen.
+JOIN/DISCONNECT de ServerPlayConnectionEvents e END_SERVER_TICK conferidos nos
+source JARs Fabric da versão fixada. Compilação não equivale a inspeção visual cliente.
+Teste de GUI usa source set smoke separado, com jogadores sintéticos e conexão
+sem transporte; ele não está no JAR de produção nem substitui login/rede de cliente.
