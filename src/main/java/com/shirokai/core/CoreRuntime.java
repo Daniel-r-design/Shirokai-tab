@@ -4,6 +4,8 @@ import com.shirokai.core.config.*;
 import com.shirokai.core.titles.*;
 import com.shirokai.core.clans.*;
 import com.shirokai.core.chat.*;
+import com.shirokai.core.styles.*;
+import com.shirokai.core.tab.*;
 import com.shirokai.core.module.*;
 import com.shirokai.core.permissions.*;
 import com.shirokai.core.placeholders.PlaceholderService;
@@ -32,6 +34,8 @@ public final class CoreRuntime implements AutoCloseable {
     private TitleService titles;
     private ClanService clans;
     private MinecraftChat chat;
+    private StyleEngine styles;
+    private TabRuntime tab;
     private int titleTicks;
     private final Path dataDirectory;
 
@@ -91,8 +95,14 @@ public final class CoreRuntime implements AutoCloseable {
             new ChatCommands(()->this).configureVanilla(server.getCommandManager().getDispatcher(),chatConfig.takeVanillaPrivateCommands());
             logger.info("[chat] Core controla roteamento; desative modules.chat para usar outro proprietário de chat");
         },()->{}));
+        modules.register(module("styles",Set.of(),()->styles=new StyleEngine(StyleConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/styles.json"))),()->{}));
+        modules.register(module("tab",Set.of("styles","permissions"),()->{
+            var tabConfig=TabConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/tab.json"));
+            tab=new TabRuntime(server,new TabPlan(tabConfig,styles),permissions,placeholders,running("titles")?titles:null,running("clans")?clans:null,running("storage")?storage:null,()->config.unavailablePlaceholder(),logger);
+            if(tabConfig.manageTeams())logger.warn("[tab] Teams habilitados explicitamente: Core usa teams de ordenação sem remover teams externos");
+        },()->{if(tab!=null)tab.close();}));
         modules.register(module("administration", Set.of("permissions"), () -> {}, () -> {}));
-        for (String id : new String[]{"storage", "permissions", "placeholders", "titles", "profiles", "clans", "chat", "administration"}) {
+        for (String id : new String[]{"storage", "permissions", "placeholders", "titles", "profiles", "clans", "chat", "styles", "tab", "administration"}) {
             modules.start(id, config.enabled(id));
             logger.info("[{}] {}", id, modules.states().get(id));
         }
@@ -105,6 +115,7 @@ public final class CoreRuntime implements AutoCloseable {
             public void stop() throws Exception { stop.run(); }
         };
     }
+    public TabRuntime tab(){if(!running("tab")||tab==null)throw new IllegalStateException("TAB indisponível");return tab;}
     public MinecraftChat chat(){if(!running("chat")||chat==null)throw new IllegalStateException("Chat indisponível");return chat;}
     public ClanService clans() {
         if (!running("clans") || clans == null) throw new IllegalStateException("Módulo clans indisponível");
@@ -115,6 +126,7 @@ public final class CoreRuntime implements AutoCloseable {
         return titles;
     }
     public void playerJoined(java.util.UUID player) {
+        if(running("tab"))tab.join(player);
         if(running("clans"))clans.membership(player).whenComplete((value,error)->{if(error!=null)logger.warn("[clans] Falha ao carregar associação "+player,error);});
         if(running("chat"))chat.service().join(player).whenComplete((value,error)->{if(error!=null)logger.warn("[chat] Falha ao carregar perfil "+player,error);});
         if (running("clans")) clans.invitations(player).whenCompleteAsync((invites,error) -> {
@@ -126,8 +138,9 @@ public final class CoreRuntime implements AutoCloseable {
             if (error != null) logger.warn("[titles] Falha ao carregar perfil " + player, error);
         });
     }
-    public void playerLeft(java.util.UUID player) { if (titles != null) titles.forget(player); if(clans!=null)clans.forget(player); if(chat!=null)chat.service().leave(player); }
+    public void playerLeft(java.util.UUID player) { if (titles != null) titles.forget(player); if(clans!=null)clans.forget(player); if(chat!=null)chat.service().leave(player);if(tab!=null)tab.forget(player); }
     public void tick() {
+        if(running("tab"))tab.tick();
         if (running("titles") && ++titleTicks >= 100) { titleTicks = 0; titles.revalidateCached(); }
     }
     public CoreConfig config() { return config; }
@@ -158,7 +171,9 @@ public final class CoreRuntime implements AutoCloseable {
                 ClanConfig clanConfig = clans == null ? null : ClanConfig.load(
                         FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/clans.json"));
                 ChatConfig chatConfig=chat==null?null:ChatConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/chat.json"));
-                return new ReloadCandidate(core,catalog,clanConfig,chatConfig);
+                StyleEngine candidateStyles=styles==null?null:new StyleEngine(StyleConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/styles.json")));
+                TabPlan tabPlan=tab==null?null:new TabPlan(TabConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/tab.json")),candidateStyles);
+                return new ReloadCandidate(core,catalog,clanConfig,chatConfig,candidateStyles,tabPlan);
             } catch (Exception failure) { throw new CompletionException(failure); }
         }, io).whenComplete((candidate, error) -> {
             if (closed) { reloading.set(false); result.completeExceptionally(new IllegalStateException("Servidor encerrando")); return; }
@@ -170,10 +185,12 @@ public final class CoreRuntime implements AutoCloseable {
                         throw new IllegalStateException("Alteração de módulos ou databaseFile exige reinício; configuração ativa preservada");
                     if(chat!=null&&candidate.chat().takeVanillaPrivateCommands()!=chat.service().config().takeVanillaPrivateCommands())
                         throw new IllegalStateException("Alteração de takeVanillaPrivateCommands exige reinício");
+                    if(tab!=null&&candidate.tab().config().requiresRestartComparedTo(tab.plan().config()))throw new IllegalStateException("Alteração de ownership do TAB exige reinício");
                     config = candidate.core();
                     if (titles != null) titles.replaceCatalog(candidate.titles());
                     if (clans != null) clans.replaceConfig(candidate.clans());
                     if(chat!=null)chat.service().replaceConfig(candidate.chat());
+                    styles=candidate.styles();if(tab!=null)tab.replacePlan(candidate.tab());
                     logger.info("[core] Configuração recarregada com segurança");
                     result.complete(null);
                 } catch (Exception failure) { result.completeExceptionally(failure); }
@@ -182,7 +199,8 @@ public final class CoreRuntime implements AutoCloseable {
         });
         return result;
     }
-    private record ReloadCandidate(CoreConfig core, TitleCatalog titles, ClanConfig clans, ChatConfig chat) {}
+    private record ReloadCandidate(CoreConfig core,TitleCatalog titles,ClanConfig clans,ChatConfig chat,StyleEngine styles,TabPlan tab) {}
+    public void prepareStop(){try{if(tab!=null)tab.close();}catch(Exception error){logger.error("[tab] Falha ao liberar recursos antes do save",error);}}
     @Override public void close() throws Exception {
         closed = true;
         io.shutdown();

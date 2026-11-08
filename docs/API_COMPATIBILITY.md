@@ -87,3 +87,16 @@ Detecção de callback usa MessageCommand.class.getName(), válido após remapea
 MessageArgumentType.getMessage/EntityArgumentType.getPlayers usados somente na
 ponte vanilla; exige um destinatário e converte corpo para texto literal.
 Teste captura pacotes no servidor sintético, sem comprovar assinatura criptográfica real.
+
+
+## Atualização0.7
+
+Assinaturas Yarn1.21.1+build.3 auditadas com javap antes de uso: PlayerListHeaderS2CPacket,
+PlayerListS2CPacket actions/entries/Entry e Scoreboard/Team. Entries é private final:
+Mixin @Mutable/@Accessor aplica somente setter da lista, sem hooks em lógica vanilla.
+Refmap gerado e incluído; Minecraft permanece dependência exata1.21.1.
+LuckPerms API5.4 sources confirmam CachedMetaData.getPrefix/getSuffix e Group.getWeight;
+contrato compilado/testado, sem afirmar runtime Fabric/contextos reais.
+Team/HoverEvent precisa de registries Minecraft; JUnit puro dá IllegalAccessError
+no bootstrap do jar nomeado. Cenários de ownership foram mantidos e migrados ao
+source set smoke no servidor Fabric, com bootstrap/transformações reais.

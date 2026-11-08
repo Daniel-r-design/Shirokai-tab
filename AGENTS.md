@@ -35,3 +35,8 @@ Chat: docs/CHAT.md. Nunca converter staff/clã indisponível para global silenci
 Toda rota Core deve usar o mesmo gate. Preservar corpo/assinatura/filtro do chat normal;
 comandos system não devem ser apresentados como mensagens assinadas. Não interpretar
 markup do jogador. A árvore de aliases privados deve continuar moderada após datapack reload.
+
+TAB/estilos: docs/TAB.md e STYLES.md. Dados dinâmicos nunca são reanalisados como tags.
+Text do cache é read-only. Ordenação teams é opt-in, não adotar team por prefixo de nome.
+Liberar próprios teams em SERVER_STOPPING antes do save; não remover integrantes externos.
+Accessor de PlayerList exige manter versão/refmap; não inventar packet list-order1.21.1.

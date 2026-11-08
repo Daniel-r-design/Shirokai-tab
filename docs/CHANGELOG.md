@@ -1,5 +1,16 @@
 # Histórico
 
+## 0.7.0-dev — estilos e TAB
+
+- Motor de templates com cores/HEX/gradientes Unicode, estilos e animações de frames.
+- Placeholders literais, tags allowlisted, cache e limites de expansão.
+- Header/footer e nomes com título escolhido, layouts/regras por grupo/perm/dimensão.
+- Pacotes de nomes incrementais por viewer, sem alterar ping/roster/game mode.
+- Teams de ordenação opt-in, isolamento de ownership e limpeza antes do save.
+- Metadata/peso de grupo LuckPerms por API e diagnóstico real de atualizações.
+- Schema5/preferência de animação, migração com backup e comando pessoal.
+- Mixin accessor/refmapMC1.21.1 e testes de componentes no servidor Fabric.
+
 ## 0.6.0-dev — chat e moderação
 
 - Canais global/local/clã/staff com destinatários, permissões e distância/dimensão.

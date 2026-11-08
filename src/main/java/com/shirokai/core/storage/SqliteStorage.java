@@ -46,9 +46,9 @@ public final class SqliteStorage implements AutoCloseable {
         try (Statement s = c.createStatement(); ResultSet rows = s.executeQuery("PRAGMA user_version")) {
             if (!rows.next()) throw new SQLException("Schema não retornado"); version = rows.getInt(1);
         }
-        if (version > 4) throw new SQLException("Banco mais recente que o mod: schema " + version);
-        if (version == 4) return;
-        if (version >= 1 && version <= 3) {
+        if (version > 5) throw new SQLException("Banco mais recente que o mod: schema " + version);
+        if (version == 5) return;
+        if (version >= 1 && version <= 4) {
             Path backup = file.resolveSibling(file.getFileName() + ".schema" + version + "-" + UUID.randomUUID() + ".bak.db");
             try (PreparedStatement s = c.prepareStatement("VACUUM INTO ?")) { s.setString(1, backup.toString()); s.execute(); }
         }
@@ -65,8 +65,9 @@ public final class SqliteStorage implements AutoCloseable {
                 s.execute("CREATE TABLE chat_identifications (player_uuid TEXT NOT NULL REFERENCES title_profiles(player_uuid) ON DELETE CASCADE, slot INTEGER NOT NULL CHECK(slot IN (0,1)), title_id TEXT NOT NULL, PRIMARY KEY(player_uuid,slot), UNIQUE(player_uuid,title_id))");
                 }
                 if(previous < 3)ClanSchema.migrate(s);
-                ChatSchema.migrate(s);
-                s.execute("PRAGMA user_version=4");
+                if(previous < 4)ChatSchema.migrate(s);
+                s.execute("ALTER TABLE player_preferences ADD COLUMN animations_enabled INTEGER NOT NULL DEFAULT 1 CHECK(animations_enabled IN(0,1))");
+                s.execute("PRAGMA user_version=5");
             }
             return null;
         });
@@ -100,9 +101,9 @@ public final class SqliteStorage implements AutoCloseable {
     public CompletableFuture<PlayerPreferences> preferences(UUID id) {
         java.util.Objects.requireNonNull(id);
         return query(c -> {
-            try (PreparedStatement s = c.prepareStatement("SELECT scoreboard_enabled FROM player_preferences WHERE player_uuid=?")) {
+            try (PreparedStatement s = c.prepareStatement("SELECT scoreboard_enabled,animations_enabled FROM player_preferences WHERE player_uuid=?")) {
                 s.setString(1, id.toString());
-                try (ResultSet rows = s.executeQuery()) { return new PlayerPreferences(id, !rows.next() || rows.getBoolean(1)); }
+                try (ResultSet rows = s.executeQuery()) { boolean exists=rows.next();return new PlayerPreferences(id,!exists||rows.getBoolean(1),!exists||rows.getBoolean(2)); }
             }
         });
     }
@@ -113,6 +114,11 @@ public final class SqliteStorage implements AutoCloseable {
                 s.setString(1, id.toString()); s.setBoolean(2, enabled); s.executeUpdate(); return null;
             }
         });
+    }
+    public CompletableFuture<Void> setAnimations(UUID player,boolean enabled){
+        return query(c->{try(var s=c.prepareStatement("INSERT INTO player_preferences(player_uuid,animations_enabled) VALUES(?,?) ON CONFLICT(player_uuid) DO UPDATE SET animations_enabled=excluded.animations_enabled")){
+            s.setString(1,player.toString());s.setBoolean(2,enabled);s.executeUpdate();return null;
+        }});
     }
     public CompletableFuture<TitleState> titleState(UUID player) {
         return query(c -> transaction(c, db -> readTitles(db, player)));

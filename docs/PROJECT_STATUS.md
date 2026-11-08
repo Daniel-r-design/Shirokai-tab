@@ -1,103 +1,106 @@
-# Estado real do projeto — 0.6.0-dev
+# Estado real do projeto — 0.7.0-dev
 
 ## Situação
 
-Chat e moderação implementados no núcleo da fase5, com títulos/perfil/clãs preservados.
-Projeto completo NÃO entregue. Motor de estilos, menções avançadas, TAB, scoreboard
-visual, integrações completas e validação cliente/assinaturas reais permanecem pendentes.
-SQLite schema4 migra versões1/2/3 com backup consistente e preservação dos sistemas anteriores.
+Motor de estilos e TAB nativo implementados na fase6; infraestrutura, perfil,
+títulos, clãs e chat anteriores preservados. Projeto completo NÃO entregue.
+Scoreboard visual, integrações externas completas, estilos em todas as superfícies,
+features adicionais de TAB e validação com cliente real continuam pendentes.
+SQLite schema5 adiciona animações sem alterar preferência anterior de scoreboard.
 
 ## Implementado nesta etapa
 
-- ChatConfig validado e preservado em chat.json, com reload atômico core/titles/clans/chat.
-- Canais global/local/clã/staff e seleção persistente, por comandos e entrada normal.
-- LOCAL usa mesma dimensão e distância3D; CLAN exige UUID igual; STAFF checa remetente
-  e destinatário em cada envio. Perda de acesso nunca converte conteúdo para global.
-- Privados, reply, ignore persistente e aliases, sem aceitar remetente arbitrário.
-- Exibição das duas identificações escolhidas; não adiciona cargo extra automaticamente.
-- Mute permanente/temporário, cooldown compartilhado, duplicação, tamanho/caracteres,
-  filtro literal normalizado, bypasses explícitos e logs de rejeição com limite de frequência.
-- Corpo do jogador literal: nenhum parser MiniMessage/JSON/eventos. Hover/sugestão
-  de conversa somente no cabeçalho; corpo não herda clique.
-- Mensagem normal mantém SignedMessage, assinatura/corpo/filtro, alterando somente
-  nome decorado de apresentação via MessageType.CHAT. Comandos Core usam mensagens system.
-- /say e /me de jogadores passam pelo mesmo roteamento/gate; console mantém anúncios vanilla.
-- /msg vanilla reconhecido por classe remapeável pode ser assumido via configuração;
-  redirects tell/w compartilham callback moderado. Reaplica após registro de datapack reload.
-- Comandos de terceiros preservados; caminhos externos não são presumidos como moderados.
-- Administração: chat inspect/mute/unmute por UUID, com permissões próprias e auditoria
-  atômica; falha de auditoria reverte a mutação.
-- Perfil ainda carregando/falhou não pode enviar e não recebe conteúdo seletivo.
-- Cache de sessão sem SQLite por mensagem/tick; canal/ignore/mute persistem e reply/spam
-  limpam no disconnect. Mute/ignore não mudam canal de sessão ao alterar default no JSON.
+- StyleEngine com AST allowlisted, cores Minecraft/HEX, gradiente por ponto de código
+  Unicode, estilos aninhados, templates e animações de frames com relógio compartilhado.
+- Placeholder é inserido literalmente, sem reanalisar markup ou permitir click/run_command.
+  Fontes/expansão/recursão são limitadas; caches LRU de compilação e render.
+- styles.json/tab.json validados e recompilados antes de aplicar snapshot atômico.
+- Header/footer multilinha e layouts por permissão, grupo primário e dimensão/prioridade.
+- Nome de TAB usa título visual único do perfil, nunca todos os títulos desbloqueados.
+- Nome por regra e dados atuais de prefixo/sufixo/grupo/peso LuckPerms via API5.4.
+- UPDATE_DISPLAY_NAME envia apenas entradas alteradas por viewer; não muda roster,
+  ping, profile, gamemode, assinatura de chat ou visibilidade/listed.
+- Controle de teams opt-in (defaultfalse), prioridade invertida e mesmo rank compartilhado,
+  preservando desempate vanilla por nome. Nenhum team externo é adotado/movido/removido.
+- Colisão/replacement e integrantes externos preservados; limpeza de próprios teams
+  em SERVER_STOPPING, antes do save. Nome externo/getPlayerListName é respeitado.
+- Preferência individual de animação persistente, frame0 até carregar/desativar;
+  snapshots/nomes comuns reutilizados e caches limpos no disconnect.
+- /tab refresh, /tab animations e /shirokaicore tab com estatísticas reais.
+- Accessor Mixin mínimo e version-pinned de entries do packetvanilla, com refmap gerado.
+- Migração1/2/3/4→5 com backup consistente; preferência de scoreboard preservada.
 
-## Validação final executada
+## Resultados finais executados
 
 | Verificação | Resultado |
 |---|---|
-| python3 tools/gradle_cloud.py build smokeClasses | PASSOU, Java21, testes e JAR remapeado |
-| JUnit | 62 executados; 0 falhas; 0 erros; 0 ignorados |
-| python3 tools/server_smoke.py --accept-eula | 33 verificações funcionais passaram em três boots Fabric reais |
-| ChatSmoke | CHAT_SMOKE_PASS: transporte real com pacotes capturados e jogadores sintéticos |
-| LOCAL/GLOBAL/CLAN/STAFF | Distância/dimensão/associação/permissões e destinatários testados |
-| Staff revogado | Mensagem negada, sem fallback público nem recepção por usuário revogado |
-| Privado/ignore/reply | Só remetente/destinatário, ignore respeitado, peer removido no disconnect |
-| Mute e bypass | Rotas compartilhadas bloqueadas; bypass explícito não ignora limites obrigatórios |
-| Payload | Corpo/UUID preservados; duas tags no cabeçalho; markup literal e sem clique no corpo |
-| Aliases vanilla | Wrapper e redirects conferidos antes/depois de END_DATA_PACK_RELOAD |
-| Admin/restart | Mute permanente persistido no servidor, consultado após restart e removido |
-| Migração3→4 | Preserva prefs/títulos/clãs e backup legível schema3 |
-| Auditoria | Falha reverte mute; regressões de títulos/clãs preservadas |
-| Reload | Chat inválido preserva snapshot; trocar ownership exige reinício; canal não muda por mute/ignore |
-| Regressões | Menus, clãs, títulos, backup, restart, schema futuro e shutdown passaram |
-| JAR | Versão0.6.0-dev e classes do mod de teste ausentes |
-| Cliente real/assinatura criptográfica/LuckPerms Fabric | NÃO EXECUTADOS |
-| Cobblemon/Impactor/Dex/PAPI | Ainda não implementados/validados |
+| python3 tools/gradle_cloud.py build smokeClasses | PASSOU: Java21, testes, compilação smoke e remap do JAR |
+| JUnit | 73 executados; 0 falhas; 0 erros; 0 ignorados |
+| python3 tools/server_smoke.py --accept-eula | 37 verificações funcionais passaram em três boots reais |
+| StyleEngineTest | Cores/HEX/Unicode, segurança de placeholder, tags inválidas, frames/freeze/cache/limites passaram |
+| TabPlanTest | JSON/condições/prioridade/default/restart e rejeição de animação/template inválido passaram |
+| TeamOwnershipSmoke | TEAM_OWNERSHIP_SMOKE_PASS, mantendo3 cenários de ownership reais |
+| TabSmoke | TAB_SMOKE_PASS, com pacotes reais capturados em jogadores sintéticos |
+| Header/nome | Layout VIP, título escolhido e conteúdo dos componentes conferidos |
+| Delta | Frame igual não envia pacotes; mudança de grupo altera só uma entrada |
+| Protocol | Só UPDATE_DISPLAY_NAME; latência original preservada e UUID real de origem |
+| Teams | Rank atualizado; foreign team preservado e display restaurado uma única vez |
+| Animação | Viewer habilitado recebe frame; viewer desabilitado não recebe; preferência persistida |
+| Stop | Teams próprios liberados, foreign preservado; mundos salvos e serviços STOPPED |
+| Migração4→5 | Backup legível schema4 e preferências independentes após restart |
+| Reload | Styles/TAB inválidos preservam snapshot; ownership exige restart |
+| JAR/refmap | Accessor/config/refmap presentes; entries→field_12369 mapeado; mod de teste ausente |
+| Regressões | Chat, aliases/datapack reload, mute/restart, clãs/menus/títulos e schema futuro passaram |
+| Cliente real/LuckPerms Fabric/assinaturas criptográficas | NÃO EXECUTADOS |
 
-45 testes anteriores preservados. Adicionados ChatServiceTest(10),
-ChatConfigAndGateTest(3) e ChatRepositoryTest(4), total17 novos testes.
-ChatSmoke usa SignedMessage.ofUnsigned e conexão sem transporte; confirma métodos,
-campos de pacote, corpo e destinatários, NÃO autenticação/criptografia cliente.
-Preservação de assinatura no caminho real usa API vanilla auditada, mas exige teste
-com cliente autenticado antes de afirmar compatibilidade completa de chat assinado.
+62 testes anteriores preservados; adicionados StyleEngineTest(5), TabPlanTest(3),
+TabPreferenceTest(2) e metadataLP(1), total11. Três cenários de TeamOwnership foram
+transferidos para o servidor Fabric após diagnóstico de bootstrap/IllegalAccessError
+do jar nomeado no JUnit cru; não foram desativados ou substituídos por checks triviais.
+No servidor real, os mesmos cenários passaram com registries e transformações reais.
+O primeiro runner desta versão tinha assert de schema futuro incorreto (52 em vez do
+42 injetado); foi corrigido e a rodada final completa passou preservando42.
+
+Smokes usam ServerPlayerEntity sintéticos/conexão sem transporte e providers LP de teste.
+Não equivalem a cliente autenticado, renderização real ou teste de carga/multiclientes.
 
 ## Artefato e evidências
 
-JAR: `build/libs/shirokai-core-0.6.0-dev.jar`
+JAR: `build/libs/shirokai-core-0.7.0-dev.jar`
 
-SHA-256: `0ac1438f06723c2a39d3106d0c1b62dc22e8ed911a71446e35680aac39d01bde`
+SHA-256: `1f37125b61bc7ab022323c61a384750d013358d296c8189d1f3e83ad7fc72c68`
 
 JUnit: `build/reports/tests/test/index.html`.
 Resultado: `build/server-smoke/result.json`.
 Logs: `build/server-smoke/first-boot.log`, `restart.log`, `storage-failure.log`.
-Smokes separados em src/smoke e não incluídos no artefato final.
-Todos os servidores de teste foram parados com stop; dados temporários removidos.
+Refmap: shirokai-core-refmap.json dentro do JAR, alvo de campo confirmado.
+Todos os servidores de teste foram parados com stop; diretórios temporários removidos.
 Artefato de desenvolvimento, NÃO release estável.
 
 ## Limitações restantes
 
-- Formatos atuais decoram remetente com texto literal. Estilos HEX/gradientes,
-  menções, grupos/prefixos/sufixos avançados e templates de corpo dependem do motor futuro.
-- Mensagens por comandos Core são system e não reportáveis como chat assinado.
-  /say,/me podem ter aparência de chat normal por redirecionamento ao canal.
-- Outro mod pode possuir comandos/eventos próprios. takeVanillaPrivateCommands=false
-  deixa vanilla privado independente; não afirmar cobertura de moderação nesses caminhos.
-- Cooldown/reply são de sessão; ignore/canal/mute persistem. Registros vencidos podem
-  permanecer para consulta; ausência de perfil carregado é bloqueada explicitamente.
-- Cliente conectado, login/Yggdrasil, LuckPerms Fabric/contextos reais e carga com
-  múltiplos clientes não validados. online-mode não foi desativado para contornar rede.
-- Estilos/administração avançada/editor gráfico de clãs, dados de treinador/cargo real
-  no perfil, TAB/scoreboard e integrações externas continuam no plano.
+- Teams podem afetar mecânicas de equipe e são opt-in. Espectadores seguem precedência
+  do cliente; visual/ordenação real ainda exigem cliente conectado.
+- Mods que enviam nomes/header diretamente por pacotes não são detectáveis universalmente;
+  escolher dono do TAB, desabilitar módulo/nomes conforme TAB.md.
+- Styles é usado pelo TAB; chat/menus e configurações individuais de títulos/clãs ainda
+  aguardam integração. Nada de interpretar texto do jogador como estilo.
+- Listed/vanish por viewer, nametags customizados, abaixo do nome e bossbar não implementados.
+- Scoreboard visual, saldos/pokédex/ginásios reais e adapters Cobblemon/Impactor/Dex/PAPI pendentes.
+- Runtime LuckPerms/contextos, Yggdrasil/login, aparência/carga e assinaturas reais não validados.
+  Autenticação não foi desativada para mascarar rede.
 
 ## Arquivos desta etapa
 
-chat/*, administration/ChatAdminCommands/AdminCommands, storage/ChatSchema e SqliteStorage,
-CoreRuntime/ShirokaiCore/CoreConfig, ClanCommands, build.gradle, testes chat/*,
-smoke/ChatSmoke/ProfileSmoke, tools/server_smoke.py e documentação, incluindo CHAT.md.
+styles/*, tab/*, mixin/PlayerListPacketAccessor, mixin JSON/refmapconfig, fabric.mod.json,
+CoreRuntime/ShirokaiCore/CoreConfig, PermissionService/LuckPermsPermissions,
+PlayerPreferences/SqliteStorage, AdminCommands, build.gradle, testes styles/tab/metadata,
+smoke/TabSmoke/TeamOwnershipSmoke/ProfileSmoke, tools/server_smoke.py e docs TAB/STYLES.
+ChatRepositoryTest teve fixture histórica ajustada para representar schema3 sem a nova coluna.
 Nenhuma dependência externa nova ou configuração de terceiro foi adicionada/modificada.
 
 ## GitHub e continuidade
 
-Base anterior salva em main (3f2c959). Esta etapa usa um commit separado, conforme
-autorização persistente do usuário. Nenhuma publicação de ambiente/release foi solicitada
-ou realizada. Próximos passos em NEXT_STEPS, uso em CHAT, CLANS e TITLES.
+Base anterior salva em main (53e5832). Esta etapa segue em commit separado conforme
+autorização persistente do usuário, sem reescrever histórico. Não houve publicação de
+ambiente ou release. Próximos passos em NEXT_STEPS; uso em TAB/STYLES/CHAT/CLANS/TITLES.

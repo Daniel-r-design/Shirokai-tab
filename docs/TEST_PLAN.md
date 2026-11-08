@@ -94,3 +94,18 @@ ChatSmoke: métodos de transporte vanilla reais, pacotes capturados, destinatár
 tags e corpo, ignore/mute, perda de staff. Fixtures usam SignedMessage.ofUnsigned:
 não validam criptografia/login cliente. Smoke de aliases roda antes/depois da conclusão
 END_DATA_PACK_RELOAD; script também testa mute persistente/restart/unmute e reload inválido.
+
+
+## Suítes0.7
+
+StyleEngineTest: estilos/HEX, gradiente por Unicode, dados literais, tags inválidas,
+loops de animação rejeitados, frames/freeze/cache e limites. TabPlanTest: JSON/defaults,
+condições e prioridade, ownership/restart e rejeição de templates grandes/anim desconhecida.
+TabPreferenceTest: independência/restart e migração4→5 com backup. Contrato de metadataLP
+adicionado ao teste existente. TeamOwnershipSmoke mantém3 cenários de teams antes
+ensaiados em JUnit: ambiente nomeado cru não aplica bootstrap/acessos reais de Fabric.
+TabSmoke captura header/nomes reais, título, grupo/priority, diff de uma entrada,
+zero pacotes em frame igual, preservação/restauração de team externo, toggle e
+congelamento de animação por viewer, cleanup. Refmap/entry action verificados no JAR/server.
+Script também valida rollback de styles/tab e ownership que exige restart.
+Cliente/renderização real/carga não testados; não confundir captura de pacotes com visual aprovado.

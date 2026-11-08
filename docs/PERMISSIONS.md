@@ -1,4 +1,4 @@
-# Permissões 0.6.0-dev
+# Permissões 0.7.0-dev
 
 LuckPerms é a fonte de verdade quando presente e inicializado. O adaptador usa API 5.4,
 usuário carregado e dados de permissão com contextos atuais. Não retém resultado de
@@ -65,3 +65,12 @@ shirokaicore.command.chat.inspect/mute/unmute autorizam administração separada
 shirokaicore.chat.bypass.mute/cooldown/filter/ignore são bypasses explícitos, nunca
 automáticos. Cooldown inclui duplicação; limites de tamanho/caracteres permanecem.
 Comandos de jogador não aceitam remetente arbitrário e não elevam permission level.
+
+
+## TAB0.7
+
+shirokaicore.command.tab.inspect permite diagnóstico global. /tab refresh/animations
+só operam sobre a própria visão/preferência. Condições em tab.json usam permissões
+LuckPerms configuradas, grupo primário e dimensão. Peso/prefixo/sufixo são dados atuais
+do LP; ausência de provider não inventa grupo ou saldo. Ownership de teams é opção
+administrativa em JSON/reinício, não permissão que jogador possa conceder a si.

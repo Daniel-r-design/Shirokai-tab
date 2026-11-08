@@ -71,7 +71,7 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         server.wait('Done (')
         server.command('shirokaicore status', 'SQLite=READY')
         server.command('shirokaicore modules', 'administration=RUNNING')
-        server.command('shirokaicore version', 'Shirokai Core 0.6.0-dev')
+        server.command('shirokaicore version', 'Shirokai Core 0.7.0-dev')
         server.command('shirokaicore permissions', 'vanilla-op4')
         server.command('shirokaicore placeholders %shirokai:online%/%shirokai:dollars%', '0/N/D')
         server.command('shirokaicore debug', 'SQLite integrity_check=ok')
@@ -84,6 +84,11 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         checks.append('native clan transactions limits transfer and confirmed disband')
         server.command('clan', '/clan exige um jogador')
         checks.append('clan command rejects console')
+        server.command('shirokai-teams-smoke', 'TEAM_OWNERSHIP_SMOKE_PASS')
+        checks.append('team ownership scenarios run with Fabric registries')
+        server.command('shirokai-tab-smoke', 'TAB_SMOKE_PASS')
+        checks.append('TAB packets selected title layouts delta updates teams and animations')
+        server.command('shirokaicore tab', 'viewers=')
         server.command('shirokai-chat-smoke', 'CHAT_SMOKE_PASS')
         checks.append('chat transport channels private moderation ignore and literal payloads')
         server.command('shirokai-chat-alias-smoke', 'CHAT_ALIAS_SMOKE_PASS')
@@ -126,6 +131,30 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         titles_file.write_text(original_titles)
         config_file.write_text(customized)
         checks.append('invalid titles catalog rejects complete reload atomically')
+        style_file = runtime / 'config/shirokai-core/styles.json'
+        original_style = style_file.read_text()
+        style = json.loads(original_style)
+        style['animations']['gold_wave']['frames'] = ["<click:run_command:/op>unsafe</click>"]
+        style_file.write_text(json.dumps(style))
+        bad_core = dict(config)
+        bad_core['unavailablePlaceholder'] = 'MUST_NOT_APPLY_STYLE'
+        config_file.write_text(json.dumps(bad_core))
+        server.command('shirokaicore reload', 'Tag não permitida')
+        server.command('shirokaicore placeholders %shirokai:dollars%', 'Unavailable')
+        style_file.write_text(original_style)
+        config_file.write_text(customized)
+        tab_file = runtime / 'config/shirokai-core/tab.json'
+        original_tab = tab_file.read_text()
+        tab = json.loads(original_tab)
+        tab['nameTemplate'] = '%animation:missing%'
+        tab_file.write_text(json.dumps(tab))
+        server.command('shirokaicore reload', 'Animação desconhecida')
+        tab = json.loads(original_tab)
+        tab['manageTeams'] = True
+        tab_file.write_text(json.dumps(tab))
+        server.command('shirokaicore reload', 'ownership do TAB exige reinício')
+        tab_file.write_text(original_tab)
+        checks += ['styles and TAB validation preserves active reload', 'TAB ownership change requires restart']
         chat_file = runtime / 'config/shirokai-core/chat.json'
         original_chat = chat_file.read_text()
         chat_file.write_text('{broken')
@@ -151,7 +180,7 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
     database = runtime / 'shirokai-core/shirokai.db'
     with sqlite3.connect(database) as connection:
         assert connection.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
-        assert connection.execute('PRAGMA user_version').fetchone()[0] == 4
+        assert connection.execute('PRAGMA user_version').fetchone()[0] == 5
         assert connection.execute('SELECT count(*) FROM admin_audit').fetchone()[0] >= 2
     backups = list((runtime / 'shirokai-core/backups').glob('*.db'))
     assert len(backups) == 1
@@ -186,6 +215,6 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         assert connection.execute('SELECT count(*) FROM admin_audit').fetchone()[0] >= 2
     checks += ['storage failure isolated from server and placeholders', 'future schema preserved']
 
-result = {'passed': checks, 'count': len(checks), 'not_tested': ['player connections', 'LuckPerms runtime', 'Cobblemon', 'Impactor', 'visual GUI and packets from a real client', 'TAB/scoreboard rendering', 'clan styles, advanced formatting and mention styling']}
+result = {'passed': checks, 'count': len(checks), 'not_tested': ['player connections', 'LuckPerms runtime', 'Cobblemon', 'Impactor', 'visual GUI and packets from a real client', 'visual TAB order and scoreboard rendering', 'clan styles, advanced formatting and mention styling']}
 (reports / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))

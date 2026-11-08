@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "package": "com.shirokai.core.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "shirokai-core-refmap.json",
+  "server": ["PlayerListPacketAccessor"],
+  "injectors": {"defaultRequire": 1}
+}

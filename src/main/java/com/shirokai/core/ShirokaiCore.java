@@ -25,11 +25,13 @@ public final class ShirokaiCore implements ModInitializer {
             new ProfileCommands(() -> runtime).register(dispatcher);
             new com.shirokai.core.clans.ClanCommands(() -> runtime).register(dispatcher);
             new ChatCommands(()->runtime).register(dispatcher);
+            new com.shirokai.core.tab.TabCommands(()->runtime).register(dispatcher);
         });
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             try { runtime = new CoreRuntime(server, LOGGER); }
             catch (Exception | LinkageError failure) { LOGGER.error("[core] Inicialização falhou; nenhum arquivo personalizado foi substituído", failure); }
         });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server->{if(runtime!=null)runtime.prepareStop();});
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             if (runtime != null) {
                 try { runtime.close(); } catch (Exception failure) { LOGGER.error("[core] Falha ao encerrar serviços", failure); }

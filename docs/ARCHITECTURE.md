@@ -85,3 +85,18 @@ ServerMessageEvents bloqueia broadcast original e impede duplicação; aliases v
 são reconhecidos por referência de classe remapeável e configurados novamente ao
 recriar árvore de comandos. ChatConfig participa do snapshot de reload atômico;
 ownership exige reinício. Mutes/ignore/canal persistem; reply e gates são de sessão.
+
+
+## Estilos/TAB0.7
+
+StyleEngine compila AST allowlisted e injeta dados literalmente; caches LRU são
+confinados à thread do servidor após publicar o candidato de reload. Compilação/
+validação usa dados imutáveis e não acessa mundo/network no workerIO.
+TabPlan valida e ordena condições/templates antes de aplicar. TabRuntime lê dados
+online/cache, compartilha resoluções, compara componentes por viewer e só envia diffs.
+TabPackets usa accessor version-pinned para entries do PlayerListS2CPacket vanilla.
+Não injeta getPlayerListName nem inventa list-order. TeamOwnership só administra
+referências criadas por ele; estrangeiros/collisions são preservados. SERVER_STOPPING
+libera teams antes do save, e SERVER_STOPPED fecha demais serviços.
+Schema5 adiciona preferência sem alterar estado de scoreboard; nenhuma consulta SQL
+no render. Group metadata é lida em cada atualização, sem persistir autoridade do LP.

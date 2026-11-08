@@ -17,5 +17,10 @@ public final class LuckPermsPermissions implements PermissionService {
         if (api.getUserManager().getUser(player) != null) return java.util.concurrent.CompletableFuture.completedFuture(null);
         return api.getUserManager().loadUser(player).thenApply(user -> null);
     }
+    @Override public Metadata metadata(UUID player){
+        var user=api.getUserManager().getUser(player);if(user==null)return Metadata.unavailable();var meta=user.getCachedData().getMetaData();
+        var group=api.getGroupManager().getGroup(user.getPrimaryGroup());int weight=group==null?0:group.getWeight().orElse(0);
+        return new Metadata(user.getPrimaryGroup(),java.util.Objects.requireNonNullElse(meta.getPrefix(),""),java.util.Objects.requireNonNullElse(meta.getSuffix(),""),weight);
+    }
     @Override public String provider() { return "LuckPerms API 5.4"; }
 }

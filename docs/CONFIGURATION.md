@@ -1,4 +1,4 @@
-# Configuração 0.6.0-dev
+# Configuração 0.7.0-dev
 
 Arquivo real: `config/shirokai-core/core.json`, relativo ao diretório do servidor.
 Criado somente se ausente. Arquivos existentes, inclusive inválidos, não são sobrescritos.
@@ -14,7 +14,9 @@ Criado somente se ausente. Arquivos existentes, inclusive inválidos, não são 
     "titles": true,
     "profiles": true,
     "clans": true,
-    "chat": true
+    "chat": true,
+    "styles": true,
+    "tab": true
   },
   "databaseFile": "shirokai.db",
   "unavailablePlaceholder": "N/D"
@@ -67,7 +69,7 @@ não reescrevemos a configuração personalizada. titles depende de storage/perm
 profiles depende de titles. Desabilitar exige reinício.
 Placeholders adicionais: selected_title, chat_tag_1 e chat_tag_2 do namespace shirokai.
 clans.json é funcional: ver CLANS.md; participa do reload atômico junto dos outros catálogos.
-chat.json é funcional: ver CHAT.md. Ainda não existem tab.json e scoreboard.json funcionais.
+chat.json é funcional: ver CHAT.md. tab.json e styles.json são funcionais: ver TAB/STYLES. Scoreboard.json visual ainda não existe.
 
 
 clans.json inclui roleActions a partir0.5; campo ausente em arquivos antigos usa
@@ -79,3 +81,9 @@ chat.json participa do mesmo reload atômico de core/titles/clans. A troca de
 ownership takeVanillaPrivateCommands exige reinício; demais campos validados aceitam
 reload. Novo defaultChannel vale para perfis carregados sem canal salvo; não muda
 sessões em andamento em ações não relacionadas. Texto de formato é literal nesta versão.
+
+
+styles/tab são snapshots validados junto de core/titles/clans/chat. Candidato compila
+animações/templates antes de publicar. managePlayerNames/manageTeams exigem reinício.
+Nenhum arquivo existente é substituído por default; estilos de placeholders são
+aplicados pelo template, nunca por reinterpretação do valor.

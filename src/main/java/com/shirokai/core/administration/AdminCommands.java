@@ -50,12 +50,13 @@ public final class AdminCommands {
                         player == null ? null : player.getGameProfile().getName(), source.getServer().getCurrentPlayerCount());
                 return feedback(source, core.placeholders().render(StringArgumentType.getString(c, "template"), context, core.config().unavailablePlaceholder()));
             })));
+        root.then(literal("tab").requires(s->allowed(s,"tab.inspect")).executes(c->feedback(c.getSource(),runtime.get().tab().status())));
         root.then(new ChatAdminCommands(runtime,this::allowed).node());
         root.then(new TitleAdminCommands(runtime, this::allowed).node());
         dispatcher.register(root);
     }
     private boolean canSeeAny(ServerCommandSource source) {
-        for (String node : new String[]{"status", "version", "modules", "permissions", "reload", "debug", "backup", "placeholders", "titles.inspect", "titles.grant", "titles.revoke", "chat.mute", "chat.unmute", "chat.inspect"})
+        for (String node : new String[]{"status", "version", "modules", "permissions", "reload", "debug", "backup", "placeholders", "titles.inspect", "titles.grant", "titles.revoke", "chat.mute", "chat.unmute", "chat.inspect", "tab.inspect"})
             if (allowed(source, node)) return true;
         return false;
     }
@@ -67,6 +68,7 @@ public final class AdminCommands {
         if (action.equals("placeholders") && !core.running("placeholders")) return false;
         if (action.startsWith("titles.") && !core.running("titles")) return false;
         if(action.startsWith("chat.")&&!core.running("chat"))return false;
+        if(action.startsWith("tab.")&&!core.running("tab"))return false;
         if (console) return true;
         if (core.permissions().provider().startsWith("vanilla-op4")) return source.hasPermissionLevel(4);
         return core.permissions().allowed(source.getPlayer().getUuid(), "shirokaicore.command." + action);

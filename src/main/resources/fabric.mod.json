@@ -5,6 +5,18 @@
   "name": "Shirokai Core",
   "description": "Núcleo modular do servidor Shirokai. Em desenvolvimento.",
   "environment": "server",
-  "entrypoints": {"main": ["com.shirokai.core.ShirokaiCore"]},
-  "depends": {"fabricloader": ">=0.16.14", "minecraft": "1.21.1", "java": ">=21", "fabric-api": "*"}
+  "entrypoints": {
+    "main": [
+      "com.shirokai.core.ShirokaiCore"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "mixins": [
+    "shirokai-core.mixins.json"
+  ]
 }
