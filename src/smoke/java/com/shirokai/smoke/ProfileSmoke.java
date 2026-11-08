@@ -30,6 +30,7 @@ public final class ProfileSmoke implements ModInitializer {
     private long tick;
     private boolean running;
     @Override public void onInitialize() {
+        new ClanSmoke().onInitialize();
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             tick++;
             for (Wait wait : List.copyOf(waits)) {

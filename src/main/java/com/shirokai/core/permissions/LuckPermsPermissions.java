@@ -13,5 +13,9 @@ public final class LuckPermsPermissions implements PermissionService {
         var user = api.getUserManager().getUser(player);
         return user != null && user.getCachedData().getPermissionData().checkPermission(permission).asBoolean();
     }
+    @Override public java.util.concurrent.CompletableFuture<Void> prepare(UUID player) {
+        if (api.getUserManager().getUser(player) != null) return java.util.concurrent.CompletableFuture.completedFuture(null);
+        return api.getUserManager().loadUser(player).thenApply(user -> null);
+    }
     @Override public String provider() { return "LuckPerms API 5.4"; }
 }

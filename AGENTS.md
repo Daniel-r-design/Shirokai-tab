@@ -21,3 +21,8 @@ Título/perfil: docs/TITLES.md. Usar uma única selected_visual persistente para
 Concessão/revogação e auditoria são transacionais. Revisão otimista deve impedir perda
 em ações concorrentes. Nunca limpar permissões de perfil offline em consulta diagnóstica.
 Source set smoke só com -PprofileSmoke; não incluir mod de teste no artefato de produção.
+
+Clãs: docs/CLANS.md. Schema3 usa líder como membro e associação global única.
+Nunca expulsar membros ao reduzir limite. Transferência/exclusão exigem confirmações.
+O usuário autorizou salvar progresso no GitHub nesta tarefa; não confundir com
+publicação de ambiente ou release estável. Preservar código e histórico remotos.

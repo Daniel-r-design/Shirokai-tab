@@ -46,10 +46,10 @@ public final class SqliteStorage implements AutoCloseable {
         try (Statement s = c.createStatement(); ResultSet rows = s.executeQuery("PRAGMA user_version")) {
             if (!rows.next()) throw new SQLException("Schema não retornado"); version = rows.getInt(1);
         }
-        if (version > 2) throw new SQLException("Banco mais recente que o mod: schema " + version);
-        if (version == 2) return;
-        if (version == 1) {
-            Path backup = file.resolveSibling(file.getFileName() + ".schema1-" + UUID.randomUUID() + ".bak.db");
+        if (version > 3) throw new SQLException("Banco mais recente que o mod: schema " + version);
+        if (version == 3) return;
+        if (version == 1 || version == 2) {
+            Path backup = file.resolveSibling(file.getFileName() + ".schema" + version + "-" + UUID.randomUUID() + ".bak.db");
             try (PreparedStatement s = c.prepareStatement("VACUUM INTO ?")) { s.setString(1, backup.toString()); s.execute(); }
         }
         final int previous = version;
@@ -59,10 +59,13 @@ public final class SqliteStorage implements AutoCloseable {
                     s.execute("CREATE TABLE player_preferences (player_uuid TEXT PRIMARY KEY NOT NULL, scoreboard_enabled INTEGER NOT NULL DEFAULT 1 CHECK(scoreboard_enabled IN (0,1)))");
                     s.execute("CREATE TABLE admin_audit (id INTEGER PRIMARY KEY, actor_uuid TEXT, action TEXT NOT NULL, created_at TEXT NOT NULL)");
                 }
+                if (previous < 2) {
                 s.execute("CREATE TABLE title_profiles (player_uuid TEXT PRIMARY KEY NOT NULL, revision INTEGER NOT NULL DEFAULT 0, selected_visual TEXT)");
                 s.execute("CREATE TABLE title_grants (player_uuid TEXT NOT NULL REFERENCES title_profiles(player_uuid) ON DELETE CASCADE, title_id TEXT NOT NULL, expires_at INTEGER NOT NULL DEFAULT 0 CHECK(expires_at>=0), PRIMARY KEY(player_uuid,title_id))");
                 s.execute("CREATE TABLE chat_identifications (player_uuid TEXT NOT NULL REFERENCES title_profiles(player_uuid) ON DELETE CASCADE, slot INTEGER NOT NULL CHECK(slot IN (0,1)), title_id TEXT NOT NULL, PRIMARY KEY(player_uuid,slot), UNIQUE(player_uuid,title_id))");
-                s.execute("PRAGMA user_version=2");
+                }
+                ClanSchema.migrate(s);
+                s.execute("PRAGMA user_version=3");
             }
             return null;
         });
@@ -87,6 +90,11 @@ public final class SqliteStorage implements AutoCloseable {
             finally { pending.decrementAndGet(); }
         });
         return result;
+    }
+    @FunctionalInterface public interface DatabaseWork<T> { T run(Connection connection) throws Exception; }
+    /** Trusted repositories only: callback is confined to the JDBC worker; never access Minecraft APIs here. */
+    public <T> CompletableFuture<T> transact(DatabaseWork<T> operation) {
+        return query(connection -> transaction(connection, operation::run));
     }
     public CompletableFuture<PlayerPreferences> preferences(UUID id) {
         java.util.Objects.requireNonNull(id);

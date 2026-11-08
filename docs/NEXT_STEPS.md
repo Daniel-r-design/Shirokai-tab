@@ -2,45 +2,32 @@
 
 ## Estado atual
 
-0.3.0-dev adiciona títulos, concessões permanentes/temporárias, seleção visual única,
-duas identificações compartilhadas, /perfil nativo e administração. A migração2
-preserva schema1 e cria backup antes da transação. Ver TITLES e PROJECT_STATUS.
+0.4.0-dev mantém títulos/perfil e adiciona núcleo de clãs por comandos com schema3,
+criação gratuita, sigla manual, convites, cargos, limites, transferência aceita e exclusão confirmada.
+O código até0.3 foi salvo no GitHub em main (89117d0); esta etapa usa um commit separado
+no mesmo ramo após validação. Ver CLANS, TITLES e PROJECT_STATUS para estado e evidências.
 
-## Próxima implementação: clãs (fase 4)
+## Próxima etapa: concluir integrações e interfaces de clãs
 
-1. Schema de clãs/membros/convites/cooldowns/histórico com índices e transações.
-2. Criação gratuita, nome e sigla manual independentes e unicidade case-insensitive.
-3. Convites com expiração e capacidade revalidada atomicamente na aceitação.
-4. Limite pelas permissões do líder: redução nunca expulsa membros existentes.
-5. Cargos internos, transferência com aceitação e exclusão confirmada.
-6. Menus e títulos de categoria CLAN derivados de pertencimento real, sem concessões fictícias.
-7. Testar concorrência, restart, cooldowns independentes e permissões antes de liberar.
+1. Configurar matriz de ações internas por cargo, mantendo invariantes de liderança.
+2. Menus de clã/membros/convites/cargos, confirmação e personalização, com validação server-side.
+3. Títulos categoria CLAN derivados de associação real; invalidar seleção no leave/kick/disband.
+4. Chat de clã integrado ao módulo de canais/moderação (fase5), sem bypass de mute/ignore.
+5. Estilos básicos/HEX/gradientes/animações por permissão, preservando estilos ao expirar VIP.
+6. Administração separada para inspeção/correção e sugestões de nomes de clãs/convites.
+7. Validar LuckPerms Fabric real, liderança offline/contextos e mensagens com clientes conectados.
 
-## Pendências de títulos/perfil
+## Demais pendências
 
-- Validar aparência e tráfego de cliques com um cliente Minecraft real conectado.
-  Teste server-side com jogadores sintéticos passou; não equivale a autenticação/rede cliente.
-- Cargo real, clã e dados do treinador no painel dependem das integrações correspondentes.
-- Gradientes, animações, condições avançadas e demais metadados do catálogo precisam
-  do motor de estilos/integrações. Texto desta versão é literal; não interpretar markup de usuário.
-- Subscrição de eventos LuckPerms para invalidar imediatamente; atualmente há validação
-  em cada ação/leitura e revalidação do cache a cada100ticks, sem consultar SQL por tick.
-- Fallback visual é ausência de seleção + fallback do consumidor. Não implementar
-  uma segunda seleção independente em TAB e scoreboard.
-- Catálogo inválido no bootstrap isola titles e bloqueia profiles; após corrigir esse
-  caso é necessário reiniciar. Reload de catálogo ativo é validado atomicamente.
+Gradientes/animações/condições avançadas e painel de cargo/clã/treinador no /perfil.
+Títulos usam cache validado a cada100ticks e em cada ação/leitura; eventos LuckPerms
+específicos e aparência com cliente real permanecem pendentes. Não criar segunda
+seleção de título para TAB/scoreboard.
 
-## Integrações e infraestrutura
+Cobblemon1.8.3, Impactor, Shirokai Dex e Fabric Placeholder API ainda exigem auditoria
+nas versões exatas. Minecraft dev registrou falha na busca de chaves Yggdrasil;
+login online não validado. Não desativar autenticação para mascarar rede.
 
-LuckPerms Fabric runtime, Cobblemon1.8.3, Impactor, Shirokai Dex e Fabric Placeholder API
-ainda exigem auditoria/validação nas versões exatas. Não inventar assinaturas.
-Modrinth recebeu CONNECT403 na auditoria inicial. Dev server registrou falha de busca
-de chaves Yggdrasil; login online não foi testado. Não desativar autenticação para mascarar rede.
-GUI smoke usa source set smoke separado, carregado só com -PprofileSmoke, nunca no JAR final.
-Migrações futuras devem continuar preservando dados e gerando backups antes de alterações.
-
-## Depois
-
-Chat/moderação, TAB, scoreboard visual, estilos/integrações e testes completos.
-Todos os requisitos originais continuam em REQUIREMENTS. Não publicar ambiente,
-push ou release automaticamente.
+Depois: chat/moderação, TAB, scoreboard visual, estilos/integrações e testes completos.
+Requisitos completos preservados em REQUIREMENTS. Push foi explicitamente autorizado
+pelo usuário nesta tarefa. Publicação de ambiente/releases continua sem autorização.

@@ -1,5 +1,15 @@
 # Histórico
 
+## 0.4.0-dev — núcleo de clãs e GitHub
+
+- Código0.3 salvo na branchmain do GitHub (89117d0), conforme pedido do usuário.
+- Schema3 com backups e integridade de liderança/associação.
+- Criação e alterações gratuitas, nome/sigla independentes, convites persistentes.
+- Cargos, limites por permissão, perda de VIP sem expulsão e aceitação transacional.
+- Transferência aceita e exclusão confirmada, prazos e auditoria atômica.
+- clans.json validado/reload e comandos sem sobrescrever comandos de terceiros.
+- Testes de concorrência, expiração, permissões, rollback, migração e componente no servidor real.
+
 ## 0.3.0-dev — títulos e perfil
 
 - titles.json validado sem sobrescrever customizações; reload junto com core.json.

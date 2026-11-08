@@ -21,6 +21,7 @@ public final class ShirokaiCore implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, environment) -> {
             commands.register(dispatcher);
             new ProfileCommands(() -> runtime).register(dispatcher);
+            new com.shirokai.core.clans.ClanCommands(() -> runtime).register(dispatcher);
         });
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             try { runtime = new CoreRuntime(server, LOGGER); }

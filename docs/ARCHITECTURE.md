@@ -49,3 +49,13 @@ Próximos serviços: renderizadores TAB/scoreboard; clãs transacionais;
 GUI com validação no servidor; canais e moderação; formatação administrativa separada
 de conteúdo de jogador; adaptadores opcionais; renderização incremental com ownership
 explícito de objectives e teams. Requisitos completos preservados em REQUIREMENTS.
+
+
+## Clãs0.4
+
+ClanConfig/ClanService capturam regras e permissões na thread do servidor.
+ClanRepository roda SQL exclusivamente via SqliteStorage.transact; nunca acessa jogo
+na thread JDBC. ClanSchema (storage) mantém DDL de schema3 separado do serviço.
+Operações usam UUID, FK composta diferida para liderança, associação global única,
+limite na aceitação e histórico/auditoria na mesma transação. Permissões de líder
+offline podem ser preparadas por LuckPerms.loadUser de forma assíncrona antes do snapshot.

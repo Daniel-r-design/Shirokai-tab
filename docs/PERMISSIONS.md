@@ -1,4 +1,4 @@
-# Permissões 0.3.0-dev
+# Permissões 0.4.0-dev
 
 LuckPerms é a fonte de verdade quando presente e inicializado. O adaptador usa API 5.4,
 usuário carregado e dados de permissão com contextos atuais. Não retém resultado de
@@ -30,9 +30,15 @@ A integração foi compilada e testada contra contrato da API; a distribuição 
 LuckPerms Fabric ainda não foi instalada/testada. Isso não comprova compatibilidade
 com todas as versões do mod.
 
-## Nós futuros, ainda não implementados
+## Clãs implementados
 
-`shirokaicore.clan.create`, `shirokaicore.clan.limit.<n>`, `shirokaicore.clan.color.hex`,
+shirokaicore.clan.create autoriza criação; shirokaicore.clan.limit.<n> determina
+limite do líder conforme clans.json, usando o maior valor. Demais ações validam
+cargos internos no banco. Fallback admin sem LuckPerms não concede criação.
+
+## Nós futuros de estilos, ainda não implementados
+
+`shirokaicore.clan.color.hex`,
 `shirokaicore.clan.color.gradient`, `shirokaicore.clan.animation`,
 `shirokaicore.clan.tag.edit`, `shirokaicore.clan.style.*`, canais e bypass de moderação.
 Cargos internos de clã não substituem LuckPerms.

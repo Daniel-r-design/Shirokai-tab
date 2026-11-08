@@ -58,3 +58,14 @@ slots inválidos, outro dono, seleção visual, dois slots, terceiro bloqueado, 
 retorno, menu fechado e preservação de itens. Não simula login ou valida renderização cliente.
 Runner server_smoke habilita esse mod somente no primeiro boot e exige PASS explícito.
 CI compila smokeClasses; execução de servidor é local nesta sessão, não no GitHub.
+
+
+## Suítes0.4
+
+ClanRepositoryTest: unicidade case-insensitive, sigla manual, cooldowns independentes,
+concorrência na última vaga, redução sem expulsão, transferência confirmada, expiração,
+roles contra escalada, rollback de auditoria, persistência e upgrade2→3 com backup.
+ClanServiceTest: criação com permissão/tempo mínimo, limites VIP dinâmicos, mudança de
+líder para limite menor, recuperação de VIP e validação/preservação de configuração.
+ClanSmoke em src/smoke: mesmo serviço/repositório no servidor Fabric real com provedor
+de permissões de teste. Não testa LuckPerms real nem representa clãs/multiclientes em produção.

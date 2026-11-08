@@ -2,6 +2,7 @@ package com.shirokai.core;
 
 import com.shirokai.core.config.*;
 import com.shirokai.core.titles.*;
+import com.shirokai.core.clans.*;
 import com.shirokai.core.module.*;
 import com.shirokai.core.permissions.*;
 import com.shirokai.core.placeholders.PlaceholderService;
@@ -28,6 +29,7 @@ public final class CoreRuntime implements AutoCloseable {
     private PermissionService permissions;
     private PlaceholderService placeholders;
     private TitleService titles;
+    private ClanService clans;
     private int titleTicks;
     private final Path dataDirectory;
 
@@ -72,8 +74,12 @@ public final class CoreRuntime implements AutoCloseable {
             }
         }, () -> {}));
         modules.register(module("profiles", Set.of("titles"), () -> {}, () -> {}));
+        modules.register(module("clans", Set.of("storage", "permissions"), () -> {
+            ClanConfig clanConfig = ClanConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/clans.json"));
+            clans = new ClanService(new ClanRepository(storage, java.time.Clock.systemUTC()), permissions, server, clanConfig);
+        }, () -> {}));
         modules.register(module("administration", Set.of("permissions"), () -> {}, () -> {}));
-        for (String id : new String[]{"storage", "permissions", "placeholders", "titles", "profiles", "administration"}) {
+        for (String id : new String[]{"storage", "permissions", "placeholders", "titles", "profiles", "clans", "administration"}) {
             modules.start(id, config.enabled(id));
             logger.info("[{}] {}", id, modules.states().get(id));
         }
@@ -86,11 +92,20 @@ public final class CoreRuntime implements AutoCloseable {
             public void stop() throws Exception { stop.run(); }
         };
     }
+    public ClanService clans() {
+        if (!running("clans") || clans == null) throw new IllegalStateException("Módulo clans indisponível");
+        return clans;
+    }
     public TitleService titles() {
         if (!running("titles") || titles == null) throw new IllegalStateException("Módulo titles indisponível");
         return titles;
     }
     public void playerJoined(java.util.UUID player) {
+        if (running("clans")) clans.invitations(player).whenCompleteAsync((invites,error) -> {
+            if(error!=null){logger.warn("[clans] Falha ao consultar convites "+player,error);return;}
+            var online=server.getPlayerManager().getPlayer(player);
+            if(online!=null && !invites.isEmpty()) online.sendMessage(net.minecraft.text.Text.literal("Você tem convites de clã: "+invites.keySet()+". Use /clan invites e /clan accept <nome>."),false);
+        },server);
         if (running("titles")) titles.view(player).whenComplete((value, error) -> {
             if (error != null) logger.warn("[titles] Falha ao carregar perfil " + player, error);
         });
@@ -124,7 +139,9 @@ public final class CoreRuntime implements AutoCloseable {
                 CoreConfig core = configs.load();
                 TitleCatalog catalog = titles == null ? null : TitleCatalog.load(
                         FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/titles.json"));
-                return new ReloadCandidate(core, catalog);
+                ClanConfig clanConfig = clans == null ? null : ClanConfig.load(
+                        FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/clans.json"));
+                return new ReloadCandidate(core, catalog, clanConfig);
             } catch (Exception failure) { throw new CompletionException(failure); }
         }, io).whenComplete((candidate, error) -> {
             if (closed) { reloading.set(false); result.completeExceptionally(new IllegalStateException("Servidor encerrando")); return; }
@@ -136,6 +153,7 @@ public final class CoreRuntime implements AutoCloseable {
                         throw new IllegalStateException("Alteração de módulos ou databaseFile exige reinício; configuração ativa preservada");
                     config = candidate.core();
                     if (titles != null) titles.replaceCatalog(candidate.titles());
+                    if (clans != null) clans.replaceConfig(candidate.clans());
                     logger.info("[core] Configuração recarregada com segurança");
                     result.complete(null);
                 } catch (Exception failure) { result.completeExceptionally(failure); }
@@ -144,7 +162,7 @@ public final class CoreRuntime implements AutoCloseable {
         });
         return result;
     }
-    private record ReloadCandidate(CoreConfig core, TitleCatalog titles) {}
+    private record ReloadCandidate(CoreConfig core, TitleCatalog titles, ClanConfig clans) {}
     @Override public void close() throws Exception {
         closed = true;
         io.shutdown();

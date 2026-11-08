@@ -1,9 +1,11 @@
 # Shirokai Core
 
 Mod server-side Fabric para Minecraft 1.21.1 / Java 21, em desenvolvimento.
-A versão 0.3.0-dev implementa infraestrutura de configuração, SQLite, permissões,
+A versão 0.4.0-dev implementa infraestrutura de configuração, SQLite, permissões,
 placeholders nativos, administração, títulos e perfil. TAB, scoreboard visual, chat
-e clãs continuam pendentes; esta versão não é uma release estável.
+continuam pendentes; o núcleo de clãs por comandos está implementado; esta versão não é uma release estável.
+
+Clãs: [CLANS](docs/CLANS.md).
 
 Títulos, seleções e menu: [TITLES](docs/TITLES.md).
 
@@ -22,7 +24,7 @@ python3 tools/gradle_cloud.py runServer --args=nogui
 python3 tools/server_smoke.py --accept-eula
 ```
 
-Artefato: `build/libs/shirokai-core-0.3.0-dev.jar`. Requer Fabric API;
+Artefato: `build/libs/shirokai-core-0.4.0-dev.jar`. Requer Fabric API;
 o driver SQLite é incluído. LuckPerms é opcional nesta etapa: sem ele, somente
 administradores vanilla nível 4 recebem acesso aos comandos administrativos.
 Não há concessão automática de permissões de gameplay.

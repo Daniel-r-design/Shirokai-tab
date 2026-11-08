@@ -1,96 +1,93 @@
-# Estado real do projeto — 0.3.0-dev
+# Estado real do projeto — 0.4.0-dev
 
 ## Situação
 
-Infraestrutura da fase2 mantida; núcleo de títulos/identificações e /perfil da fase3
-implementado. Projeto completo NÃO entregue. TAB, scoreboard visual, chat, clãs,
-menus de clãs e integrações completas permanecem pendentes. Nenhum requisito foi descartado.
+Núcleo de clãs da fase4 implementado por comandos, com infraestrutura e títulos/perfil
+anteriores preservados. Projeto completo NÃO entregue. Interfaces/estilos de clãs,
+chat, TAB, scoreboard visual e integrações completas continuam pendentes.
+
+## GitHub
+
+O usuário autorizou salvar o progresso e continuar. Base0.3 enviada à branch main em
+89117d0 (feat: bootstrap Shirokai Core with persisted titles and profile GUI).
+Esta etapa0.4 é salva em um commit separado na mesma branch, sem reescrever histórico.
+Não há publicação de ambiente, release ou envio de dados/worlds/bancos ao GitHub.
+CI compila build/testes/smokeClasses; execução remota do workflow não foi verificada.
 
 ## Implementado nesta etapa
 
-- Catálogo titles.json versionado/validado, defaults sem overwrite e reload atômico
-  junto com core.json. Categoria ROLE vinculada à permissão; SPECIAL por concessão/default.
-- Desbloqueios permanentes/temporários, expiração e estados UNLOCKED/LOCKED/EXPIRED/UNAVAILABLE.
-- Uma selected_visual persistente para ambos TAB e scoreboard futuros; nenhum segundo campo.
-- No máximo duas identificações totais no chat, incluindo cargos, com ordem de categoria
-  e prioridade. Não há ainda renderização de chat; esta etapa fornece seleção e dados.
-- Seleção revalida permissões/expiração/superfícies antes de gravar; invalidação no cache
-  e limpeza persistente online. Diagnóstico offline não apaga escolhas por permissões não carregadas.
-- Cache removido no disconnect; verificação a cada100ticks sem SQL por tick.
-- SQLite schema2: perfis, concessões e slots0/1 com unicidade, revisão otimista CAS,
-  backup antes de upgrade1→2 e auditoria na mesma transação de grant/revoke.
-- /perfil: container vanilla 9x6 com paginação, estados, título único, contador n/2,
-  clique esquerdo visual/direito chat, refresh, limpar e voltar ao /menu como jogador.
-- Menu bloqueia transferência de ícones, outros usuários, ações inválidas e tela fechada;
-  callbacks não reabrem uma tela trocada/fechada.
-- Comandos administrativos titles list/inspect/grant/revoke com permissões distintas e UUID.
-- Placeholders selected_title/chat_tag_1/chat_tag_2 do serviço nativo.
+- ClanConfig/ClanService/ClanRepository e módulo clans com dependências storage/permissions.
+- clans.json validado, defaults preservados e reload atômico junto de core/titles.
+- Criação gratuita com permissão/tempo mínimo/cooldown; nome separado de sigla manual.
+- Nome/sigla únicos sem caixa e cooldowns independentes; identidade não perde membros.
+- Associação única por UUID; cargos líder/oficial/membro e ações com hierarquia protegida.
+- Convites persistentes, prazos, limites, recusa/cancelamento e notificação no join.
+- Aceitação transacional com capacidade atual do líder e proteção contra troca de líder.
+- VIP expirado/limite reduzido não remove membros; só bloqueia novas entradas.
+- Transferência com solicitação/aceitação/recusa/prazo; nenhuma transferência por offline.
+- Exclusão exige pedido e confirmação explícita com prazo e mesmo líder.
+- Histórico e auditoria na mesma transação; falha de auditoria reverte mutação.
+- Schema3 com liderança como membro por FK composta diferida e backup pré-upgrade1/2.
+- API LuckPerms prepara dados do líder offline antes de calcular permissões na thread do servidor.
+- Comandos /clan, info, members, create, tag, rename, invite, invites, accept, decline,
+  cancel, leave, kick, promote, demote, transfer, transferaccept, transferdecline,
+  disband e disband confirm. Comando de terceiro não é sobrescrito.
 
-## Validação final executada
+## Validação final
 
 | Verificação | Resultado |
 |---|---|
-| `python3 tools/gradle_cloud.py build smokeClasses` | PASSOU: compilação Java21, testes e remap do JAR |
-| JUnit | 31 executados; 0 falhas; 0 erros; 0 ignorados |
-| `python3 tools/server_smoke.py --accept-eula` | 24 verificações funcionais passaram em três boots Fabric reais |
-| Menu nativo no servidor | PROFILE_GUI_SMOKE_PASS com jogadores sintéticos e handler real |
-| Proteções GUI | quickMove/shift/swap/throw/clone/quick-craft/pickup-all, slots inválidos, outro dono e menu fechado bloqueados |
-| Ações GUI | Seleção visual, dois slots, terceira rejeitada, limpar/voltar e inventário preservado |
-| Catálogo/concessões | Grant permanente/temporário, inspect, revoke e restart passaram |
-| Reload | Catálogo inválido rejeita mudança inteira sem aplicar novo core.json |
-| Migração1→2 | Backup legível, prefs preservadas e nenhum backup redundante no próximo boot |
-| Concorrência | Snapshot antigo não sobrescreve seleção mais nova; terceira identificação rejeitada |
-| Atomicidade | Falha de auditoria reverte grant/revisão |
-| Build de produção | ProfileMenu presente; classes do mod de teste ausentes do JAR |
-| Shutdown | stop, mundos salvos, serviços STOPPED e Gradle exit0 |
-| Cliente real/login online | NÃO EXECUTADOS |
-| LuckPerms Fabric runtime | NÃO EXECUTADO; API5.4 compilada e teste de contrato apenas |
+| python3 tools/gradle_cloud.py build smokeClasses | PASSOU, Java21 e JAR remapeado |
+| JUnit | 41 executados, 0 falhas, 0 erros, 0 ignorados |
+| python3 tools/server_smoke.py --accept-eula | 26 verificações funcionais passaram em três boots reais |
+| Clãs no Fabric real | CLAN_SMOKE_PASS: mesmo serviço/JDBC com provedor de permissões de teste |
+| Capacidade/concorrência | Última vaga não duplica associação; redução não expulsa; recuperação libera |
+| Liderança | Transferência aceita, limite menor sem expulsão, confirmação antiga invalidada |
+| Segurança interna | Membro não expulsa, oficial não promove/expulsa líder ou outro oficial |
+| Expiração | Convite, transferência e confirmação vencidos rejeitados |
+| Identidade | Sigla manual, nomes/siglas duplicados e cooldowns independentes testados |
+| Atomicidade | Falha de auditoria reverte criação/identidade; títulos anteriores continuam testados |
+| Migração | Upgrade2→3 preserva título/revisão e gera backup legível schema2 |
+| Regressão de perfil | PROFILE_GUI_SMOKE_PASS e regras anteriores preservadas |
+| Shutdown | stop, mundos salvos, módulos STOPPED e Gradle exit0 |
+| JAR | Versão0.4.0-dev; classes do mod de teste ausentes |
+| Cliente real/login/LuckPerms Fabric | NÃO EXECUTADOS |
 | Cobblemon/Impactor/Dex/PAPI | Ainda não implementados/validados |
-| GitHub Actions | Workflow atualizado para compilar testes de servidor; não executado remotamente |
 
-Suites: ModuleManagerTest(6), ConfigServiceTest(4), SqliteStorageTest(5),
-PlaceholderServiceTest(2), LuckPermsPermissionsTest(1), TitleRulesTest(4),
-TitleCatalogTest(2), TitleStorageTest(4), TitleServiceTest(3).
-
-O teste do menu usa ServerPlayerEntity sintético dentro do servidor real e uma conexão
-sem transporte; isso valida o handler e persistência, NÃO autenticação, pacotes vindos
-de um cliente ou aparência visual. Login online continua pendente por falha observada
-na busca de chaves Yggdrasil. Autenticação não foi desativada.
+Suites anteriores (31) preservadas; ClanRepositoryTest(7) e ClanServiceTest(3) adicionadas.
+O teste de clãs usa UUIDs e provedor de permissões de teste para simular VIP, não uma
+instalação de LuckPerms Fabric. O teste de perfil usa jogadores sintéticos/conexão
+sem transporte. Não representam validação de login, rede ou aparência com cliente real.
 
 ## Artefato e evidências
 
-JAR: `build/libs/shirokai-core-0.3.0-dev.jar`
+`build/libs/shirokai-core-0.4.0-dev.jar`
 
-SHA-256: `a75a86ee5d07b7d794fec4e2753495ef61371b0559b1f381c601acc0e7ede5f9`
+SHA-256: `0c2362e3ddd04e5682b3694189dcb50ac4c392b00f2f1b4bc484a1e6f9c630e2`
 
-Relatórios: `build/reports/tests/test/index.html`, `build/server-smoke/result.json`.
-Logs: `build/server-smoke/first-boot.log`, `restart.log`, `storage-failure.log`.
-Mod de teste: `src/smoke`, ativado só com -PprofileSmoke no runServer.
-Diretórios temporários do smoke são apagados; run de desenvolvimento é preservado.
-Nenhum servidor de teste permanece rodando. EULA segue aceita pela autorização anterior.
+JUnit: `build/reports/tests/test/index.html`.
+Smoke: `build/server-smoke/result.json`, logs first-boot/restart/storage-failure.
+Source set smoke: testes isolados, nunca incluídos no JAR de produção.
+Artefato de desenvolvimento, NÃO release estável.
 
-Artefato de desenvolvimento, NÃO release estável nem projeto completo.
+## Limitações e próximos passos
 
-## Limitações restantes da fase3
+- Menus, estilos visuais e configuração da matriz de ações internas ainda pendentes;
+  os cargos têm regras fixas nesta versão, documentadas em CLANS.
+- Chat de clã e títulos CLAN no /perfil aguardam integrações reais; não simulados.
+- Ferramentas administrativas de inspeção/correção de clãs ainda pendentes.
+- Capacidade usa snapshot de permissões na thread do servidor antes de enfileirar
+  a transação; liderança é reconferida no banco. Não há transação distribuída com LuckPerms.
+- Minecraft dev registrou falha de busca de chaves Yggdrasil; login online não validado.
+  Autenticação não foi desativada. Runtime LuckPerms e contextos do servidor real pendentes.
+- Clãs não fazem SQL por tick. Registros expirados podem permanecer para manutenção futura.
+- Gradientes/animações/condições avançadas, cargo/clã/treinador no painel, eventos LP,
+  renderizadores TAB/scoreboard/chat e integrações externas continuam no plano.
 
-Gradientes/animações/condições avançadas dependem do motor de estilos futuro;
-display é literal. Títulos CLAN são rejeitados até existir pertencimento real validado.
-Painel de cargo real/clã/treinador depende das integrações. Eventos LuckPerms específicos
-não foram assinados ainda; há revalidação periódica e imediata nas ações/leituras.
-A renderização de TAB/scoreboard/chat ainda não existe, embora os dados compartilhados existam.
-Fallback atual é ausência de seleção e texto de fallback do consumidor, sem título automático.
+## Arquivos desta etapa
 
-## Arquivos alterados/criados nesta etapa
-
-- build.gradle, workflow build.yml: versão0.3, source set smoke separado e compilação CI.
-- core/CoreRuntime.java, ShirokaiCore.java, config/CoreConfig.java: módulos, eventos e reload.
-- titles/*: catálogo, definições, regras, estado e serviço.
-- profiles/*: menu e comandos de jogador.
-- administration/*, placeholders/PlaceholderService.java: comandos e dados adicionais.
-- storage/SqliteStorage.java: schema2, backups, revisão e transações de títulos.
-- src/test/.../titles/*, src/smoke/* e tools/server_smoke.py: testes e runner ampliados.
-- README.md, AGENTS.md, docs/*.md, incluindo novo TITLES.md: uso e continuidade.
-
-Os arquivos continuam locais e não commitados (checkout original sem commits).
-Não houve push, release, publicação ou alteração do rascunho do ambiente.
-Próxima implementação: clãs com transações, permissões e confirmações, conforme NEXT_STEPS.
+clans/*, storage/ClanSchema.java, SqliteStorage.java, PermissionService/LuckPermsPermissions,
+CoreRuntime/ShirokaiCore/CoreConfig, build.gradle, testes clans/*, smoke/ClanSmoke,
+ProfileSmoke, tools/server_smoke.py, .gitattributes e documentação.
+REQUIREMENTS original foi preservado; atributo de whitespace aceita os CRLF originais.
+Detalhes de uso: CLANS.md. Próximos passos: NEXT_STEPS.md.

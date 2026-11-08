@@ -57,3 +57,12 @@ JOIN/DISCONNECT de ServerPlayConnectionEvents e END_SERVER_TICK conferidos nos
 source JARs Fabric da versão fixada. Compilação não equivale a inspeção visual cliente.
 Teste de GUI usa source set smoke separado, com jogadores sintéticos e conexão
 sem transporte; ele não está no JAR de produção nem substitui login/rede de cliente.
+
+
+## Atualização0.4
+
+ClanCommands compila com Stats.CUSTOM.getOrCreateStat(Stats.PLAY_TIME) e
+ServerStatHandler.getStat na versãoYarn fixada. LuckPerms UserManager.loadUser(UUID)
+prepara dados offline sem bloquear a thread do servidor; sem integração Fabric real
+instalada ainda não há validação de contextos/expiração do mod no servidor Shirokai.
+Testes do serviço usam provedor de permissões de teste e SQLite real.

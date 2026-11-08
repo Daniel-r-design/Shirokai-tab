@@ -1,4 +1,4 @@
-# Configuração 0.3.0-dev
+# Configuração 0.4.0-dev
 
 Arquivo real: `config/shirokai-core/core.json`, relativo ao diretório do servidor.
 Criado somente se ausente. Arquivos existentes, inclusive inválidos, não são sobrescritos.
@@ -12,7 +12,8 @@ Criado somente se ausente. Arquivos existentes, inclusive inválidos, não são 
     "placeholders": true,
     "administration": true,
     "titles": true,
-    "profiles": true
+    "profiles": true,
+    "clans": true
   },
   "databaseFile": "shirokai.db",
   "unavailablePlaceholder": "N/D"
@@ -64,4 +65,5 @@ Novas chaves de módulos ausentes em core.json antigo recebem default true em me
 não reescrevemos a configuração personalizada. titles depende de storage/permissions;
 profiles depende de titles. Desabilitar exige reinício.
 Placeholders adicionais: selected_title, chat_tag_1 e chat_tag_2 do namespace shirokai.
-Ainda não existem tab.json, scoreboard.json, chat.json e clans.json funcionais.
+clans.json é funcional: ver CLANS.md; participa do reload atômico junto dos outros catálogos.
+Ainda não existem tab.json, scoreboard.json e chat.json funcionais.
