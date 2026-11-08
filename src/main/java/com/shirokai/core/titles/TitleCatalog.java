@@ -50,6 +50,7 @@ public record TitleCatalog(int schemaVersion, Map<String, TitleDefinition> defin
                     string(object, "description", false), TitleDefinition.Category.valueOf(string(object, "category", false)),
                     object.get("priority").getAsInt(), permission, object.get("unlockedByDefault").getAsBoolean(),
                     object.get("tab").getAsBoolean(), object.get("scoreboard").getAsBoolean(), object.get("chat").getAsBoolean());
+            if (definition.category()==TitleDefinition.Category.CLAN) throw new IllegalArgumentException("CLAN é derivado de pertencimento real, não de configuração");
             if (!entry.getKey().equals(definition.id())) throw new IllegalArgumentException("ID diverge da chave: " + entry.getKey());
             definitions.put(definition.id(), definition);
         }

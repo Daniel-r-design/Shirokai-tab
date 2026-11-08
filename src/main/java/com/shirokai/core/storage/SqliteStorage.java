@@ -139,6 +139,13 @@ public final class SqliteStorage implements AutoCloseable {
             return CompletableFuture.failedFuture(new IllegalArgumentException("Máximo de duas identificações únicas"));
         return query(c -> transaction(c, db -> {
             ensureProfile(db, state.player());
+            var chosen=new ArrayList<>(state.chatIds());if(state.selectedVisual()!=null)chosen.add(state.selectedVisual());
+            for(String id:chosen)if(id.startsWith("clan_")){
+                String clan=UUID.fromString(id.substring(5)).toString();
+                try(var check=db.prepareStatement("SELECT 1 FROM clan_members JOIN clans ON clans.id=clan_members.clan_id WHERE player_uuid=? AND clan_id=? AND tag IS NOT NULL")){
+                    check.setString(1,state.player().toString());check.setString(2,clan);try(var rows=check.executeQuery()){if(!rows.next())throw new IllegalStateException("Identificação de clã não pertence mais ao jogador");}
+                }
+            }
             try (var s = db.prepareStatement("UPDATE title_profiles SET selected_visual=?,revision=revision+1 WHERE player_uuid=? AND revision=?")) {
                 s.setString(1, state.selectedVisual()); s.setString(2, state.player().toString()); s.setLong(3, state.revision());
                 if (s.executeUpdate() != 1) throw new ConcurrentModificationException("Perfil atualizado simultaneamente; tente novamente");

@@ -2,32 +2,31 @@
 
 ## Estado atual
 
-0.4.0-dev mantém títulos/perfil e adiciona núcleo de clãs por comandos com schema3,
-criação gratuita, sigla manual, convites, cargos, limites, transferência aceita e exclusão confirmada.
-O código até0.3 foi salvo no GitHub em main (89117d0); esta etapa usa um commit separado
-no mesmo ramo após validação. Ver CLANS, TITLES e PROJECT_STATUS para estado e evidências.
+0.5.0-dev adiciona menus de clãs, matriz configurável de ações e identificação CLAN
+real no perfil. Schema3 permanece. Proteções de escopo de menu e limpeza de seleção
+na saída/expulsão/exclusão são transacionais. Ver CLANS, TITLES e PROJECT_STATUS.
 
-## Próxima etapa: concluir integrações e interfaces de clãs
+## Próxima implementação
 
-1. Configurar matriz de ações internas por cargo, mantendo invariantes de liderança.
-2. Menus de clã/membros/convites/cargos, confirmação e personalização, com validação server-side.
-3. Títulos categoria CLAN derivados de associação real; invalidar seleção no leave/kick/disband.
-4. Chat de clã integrado ao módulo de canais/moderação (fase5), sem bypass de mute/ignore.
-5. Estilos básicos/HEX/gradientes/animações por permissão, preservando estilos ao expirar VIP.
-6. Administração separada para inspeção/correção e sugestões de nomes de clãs/convites.
-7. Validar LuckPerms Fabric real, liderança offline/contextos e mensagens com clientes conectados.
+1. Chat/canais/moderação (fase5), incluindo chat de clã, duas identificações totais,
+   permissões, cooldown, mute, ignore e texto do jogador separado de templates administrativos.
+2. Ferramentas administrativas separadas para inspeção/correção de clãs e diagnóstico.
+3. Motor de estilos compartilhado com cores/HEX/gradientes/animações e permissões:
+   preservar estilo salvo quando VIP expirar e aplicar fallback permitido.
+4. Editor gráfico textual de nome/sigla e lista gráfica de convites enviados.
+   Atualmente nome/sigla usam comandos e convites recebidos possuem GUI funcional.
+5. Testar menus com cliente Minecraft real e LuckPerms Fabric, incluindo líder offline/contextos.
 
-## Demais pendências
+## Pendências preservadas
 
-Gradientes/animações/condições avançadas e painel de cargo/clã/treinador no /perfil.
-Títulos usam cache validado a cada100ticks e em cada ação/leitura; eventos LuckPerms
-específicos e aparência com cliente real permanecem pendentes. Não criar segunda
-seleção de título para TAB/scoreboard.
+Cargo real/dados do treinador no perfil, condições avançadas, eventos LuckPerms
+específicos, Cobblemon1.8.3, Impactor, Shirokai Dex, Fabric Placeholder API.
+Títulos atuais validam em ações/leitura e a cada100ticks; clã usa cache atualizado
+por eventos do serviço sem SQL por tick. Não criar seleção visual separada para TAB/scoreboard.
 
-Cobblemon1.8.3, Impactor, Shirokai Dex e Fabric Placeholder API ainda exigem auditoria
-nas versões exatas. Minecraft dev registrou falha na busca de chaves Yggdrasil;
-login online não validado. Não desativar autenticação para mascarar rede.
+Dev server registrou falha na busca de chaves Yggdrasil; login online não foi validado.
+Não desativar autenticação para mascarar rede. Testes com jogadores sintéticos validam
+handlers, não rede/renderização cliente. Depois: TAB, scoreboard visual, integrações e testes completos.
 
-Depois: chat/moderação, TAB, scoreboard visual, estilos/integrações e testes completos.
-Requisitos completos preservados em REQUIREMENTS. Push foi explicitamente autorizado
-pelo usuário nesta tarefa. Publicação de ambiente/releases continua sem autorização.
+O usuário autorizou salvar progresso no GitHub; manter commits e main sincronizados
+sem reescrever histórico. Não publicar ambiente ou release estável automaticamente.

@@ -59,3 +59,15 @@ na thread JDBC. ClanSchema (storage) mantém DDL de schema3 separado do serviço
 Operações usam UUID, FK composta diferida para liderança, associação global única,
 limite na aceitação e histórico/auditoria na mesma transação. Permissões de líder
 offline podem ser preparadas por LuckPerms.loadUser de forma assíncrona antes do snapshot.
+
+
+## Menus e títulos de clã0.5
+
+ClanMenu usa páginas e container read-only. ClanService.scoped compartilha config/cache/
+listeners, mas seu repositório exige expectedClan na mesma transação de mutação.
+roleActions é snapshot validado; ClanPolicy e hierarquia SQL reconferem autorização.
+ClanService publica mudanças online após commit, incluindo alvo removido e membros
+anteriores em disband. TitleService recebe provedor dinâmico/refresh por interfaces
+funcionais, sem depender do serviço de clãs; catálogo efetivo é específico do jogador.
+ClanTitle deriva nome/display de ClanSnapshot. Persistência verifica associação real
+em save e limpa seleção na própria transação de leave/kick/disband, com revisão CAS.

@@ -52,8 +52,9 @@ public final class ProfileMenu extends GenericContainerScreenHandler {
         display.clear();
         display.setStack(4, icon(Items.PLAYER_HEAD, owner.getGameProfile().getName(),
                 "Título: " + (state.selectedVisual() == null ? "Nenhum" : state.selectedVisual()),
+                "Clã: " + titles.clanName(owner.getUuid()).orElse("Nenhum"),
                 "Identificações equipadas: " + state.chatIds().size() + "/2", "Esquerdo: título TAB/scoreboard", "Direito: equipar/remover no chat"));
-        entries = titles.catalog().definitions().values().stream()
+        entries = titles.catalog(owner.getUuid()).definitions().values().stream()
                 .sorted(Comparator.comparing(TitleDefinition::category).thenComparing(Comparator.comparingInt(TitleDefinition::priority).reversed()).thenComparing(TitleDefinition::id)).toList();
         page = Math.min(page, Math.max(0, (entries.size() - 1) / 36));
         for (int i = 0; i < 36 && page * 36 + i < entries.size(); i++) {

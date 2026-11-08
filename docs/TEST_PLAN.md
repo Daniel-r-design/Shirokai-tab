@@ -69,3 +69,14 @@ ClanServiceTest: criação com permissão/tempo mínimo, limites VIP dinâmicos,
 líder para limite menor, recuperação de VIP e validação/preservação de configuração.
 ClanSmoke em src/smoke: mesmo serviço/repositório no servidor Fabric real com provedor
 de permissões de teste. Não testa LuckPerms real nem representa clãs/multiclientes em produção.
+
+
+## Suítes0.5
+
+ClanIntegrationTest: cargos configuráveis sem violar hierarquia, escopo de menu antigo
+rejeitado após troca de clã, identificação real em duas vagas, falsificação bloqueada,
+limpeza atômica na saída/kick/disband. Usa SQLite real e executor equivalente à thread do servidor.
+ClanMenuSmoke: aceitar convite no menu, listar membro, promover, pedir transferência
+somente após confirmar, aceitar pelo sucessor, pedido de exclusão em duas etapas,
+cancelamento que invalida pedido, exclusão final, menu fechado e preservação dos itens.
+Runner exige CLAN_MENU_SMOKE_PASS; não substitui teste visual com cliente conectado.

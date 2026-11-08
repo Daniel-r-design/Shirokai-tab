@@ -17,12 +17,23 @@ public final class TitleService {
     private final Map<UUID, TitleState> cache = new HashMap<>();
     private final Set<UUID> refreshing = new HashSet<>();
     private TitleCatalog catalog;
+    private Function<UUID,Optional<String>> clanName=player->Optional.empty();
+    private Function<UUID,Optional<TitleDefinition>> dynamic=player->Optional.empty();
+    private Function<UUID,CompletableFuture<Void>> refresh=player->CompletableFuture.completedFuture(null);
     public TitleService(SqliteStorage storage, TitleCatalog catalog, BiPredicate<UUID, String> permissions,
                         Executor serverExecutor, Predicate<UUID> cacheable, Clock clock, BiConsumer<String, Throwable> errors) {
-        this.storage = storage; this.catalog = catalog; this.rules = new TitleRules(permissions);
+        this.storage = storage; this.catalog = catalog; this.rules = new TitleRules(permissions,(player,id)->dynamic.apply(player).map(title->title.id().equals(id)).orElse(false));
         this.serverExecutor = serverExecutor; this.cacheable = cacheable; this.clock = clock; this.errors = errors;
     }
     public TitleCatalog catalog() { return catalog; }
+    public TitleCatalog catalog(UUID player){
+        var definitions=new HashMap<>(catalog.definitions());dynamic.apply(player).ifPresent(title->definitions.put(title.id(),title));
+        return new TitleCatalog(1,definitions);
+    }
+    public void bindClans(Function<UUID,Optional<TitleDefinition>> provider,Function<UUID,CompletableFuture<Void>> refresh){bindClans(provider,refresh,id->provider.apply(id).map(TitleDefinition::name));}
+    public void bindClans(Function<UUID,Optional<TitleDefinition>> provider,Function<UUID,CompletableFuture<Void>> refresh,Function<UUID,Optional<String>> name){this.dynamic=provider;this.refresh=refresh;this.clanName=name;}
+    public Optional<String> clanName(UUID player){return clanName.apply(player);}
+    public void refreshCached(UUID player){if(cacheable.test(player))view(player).whenCompleteAsync((state,error)->{if(error!=null)errors.accept("Atualização de clã "+player,error);},serverExecutor);}
     public TitleRules rules() { return rules; }
     public long now() { return clock.millis(); }
     public void replaceCatalog(TitleCatalog value) { catalog = value; revalidateCached(); }
@@ -32,21 +43,21 @@ public final class TitleService {
             var previous = cache.get(state.player());
             if (previous == null || previous.revision() <= state.revision()) cache.put(state.player(), state);
         }
-        return rules.normalize(state, catalog, now());
+        return rules.normalize(state, catalog(state.player()), now());
     }
     private static boolean sameSelections(TitleState first, TitleState second) {
         return Objects.equals(first.selectedVisual(), second.selectedVisual()) && first.chatIds().equals(second.chatIds());
     }
     public CompletableFuture<TitleState> view(UUID player) {
-        return storage.titleState(player).thenComposeAsync(state -> {
-            var normalized = rules.normalize(state, catalog, now());
+        return refresh.apply(player).thenComposeAsync(v->storage.titleState(player),serverExecutor).thenComposeAsync(state -> {
+            var normalized = rules.normalize(state, catalog(state.player()), now());
             // Offline permissions may not be loaded; never erase an offline player's selections from a diagnostic read.
             return !cacheable.test(player) || sameSelections(state, normalized) ? CompletableFuture.completedFuture(state) : storage.saveTitles(normalized);
         }, serverExecutor).thenApplyAsync(this::remember, serverExecutor);
     }
     public CompletableFuture<TitleState> equip(UUID player, String id, boolean chat) {
-        return storage.titleState(player).thenComposeAsync(state ->
-                storage.saveTitles(rules.equip(state, catalog, id, chat, now())), serverExecutor)
+        return refresh.apply(player).thenComposeAsync(v->storage.titleState(player),serverExecutor).thenComposeAsync(state ->
+                storage.saveTitles(rules.equip(state, catalog(player), id, chat, now())), serverExecutor)
                 .thenApplyAsync(this::remember, serverExecutor);
     }
     public CompletableFuture<TitleState> clear(UUID player) {
@@ -70,7 +81,7 @@ public final class TitleService {
     public Optional<TitleState> cached(UUID player) {
         var state = cache.get(player);
         if (state == null) return Optional.empty();
-        var valid = rules.normalize(state, catalog, now());
+        var valid = rules.normalize(state, catalog(state.player()), now());
         if (!sameSelections(state, valid) && refreshing.add(player)) {
             view(player).whenCompleteAsync((ignored, error) -> {
                 refreshing.remove(player);
@@ -89,7 +100,7 @@ public final class TitleService {
                 case "shirokai:chat_tag_2" -> state.chatIds().size() > 1 ? state.chatIds().get(1) : null;
                 default -> null;
             };
-            return Optional.ofNullable(id).map(catalog.definitions()::get).map(TitleDefinition::display);
+            return Optional.ofNullable(id).map(catalog(player).definitions()::get).map(TitleDefinition::display);
         });
     }
 }

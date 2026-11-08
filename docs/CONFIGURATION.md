@@ -1,4 +1,4 @@
-# Configuração 0.4.0-dev
+# Configuração 0.5.0-dev
 
 Arquivo real: `config/shirokai-core/core.json`, relativo ao diretório do servidor.
 Criado somente se ausente. Arquivos existentes, inclusive inválidos, não são sobrescritos.
@@ -67,3 +67,8 @@ profiles depende de titles. Desabilitar exige reinício.
 Placeholders adicionais: selected_title, chat_tag_1 e chat_tag_2 do namespace shirokai.
 clans.json é funcional: ver CLANS.md; participa do reload atômico junto dos outros catálogos.
 Ainda não existem tab.json, scoreboard.json e chat.json funcionais.
+
+
+clans.json inclui roleActions a partir0.5; campo ausente em arquivos antigos usa
+matriz padrão em memória sem overwrite. Alterações passam pelo mesmo reload atômico.
+Títulos CLAN não são JSON estático: dependem de associação e sigla reais (ver CLANS/TITLES).

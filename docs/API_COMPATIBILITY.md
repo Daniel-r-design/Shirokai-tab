@@ -66,3 +66,11 @@ ServerStatHandler.getStat na versãoYarn fixada. LuckPerms UserManager.loadUser(
 prepara dados offline sem bloquear a thread do servidor; sem integração Fabric real
 instalada ainda não há validação de contextos/expiração do mod no servidor Shirokai.
 Testes do serviço usam provedor de permissões de teste e SQLite real.
+
+
+## Atualização0.5
+
+Menus reutilizam GenericContainerScreenHandler/ScreenHandler vanilla já auditados
+na versãoYarn fixa. Não foram adicionados protocolos personalizados ou mod obrigatório
+no cliente. Teste ClanMenuSmoke exerce handler real com ServerPlayerEntity sintéticos;
+login/rede/renderização de cliente real e runtime LuckPerms continuam não validados.

@@ -72,7 +72,7 @@ class ClanRepositoryTest {
         var clock=new Time();UUID leader=UUID.randomUUID(),member=UUID.randomUUID();var config=ClanConfig.defaults();
         try(var storage=new SqliteStorage(directory.resolve("data.db"))){
             var repo=new ClanRepository(storage,clock);var clan=get(repo.create(leader,"TestClan",config));
-            get(repo.invite(leader,member,config));get(repo.cancel(leader,member));
+            get(repo.invite(leader,member,config));get(repo.cancel(leader,member,config));
             assertThrows(ExecutionException.class,()->get(repo.invite(leader,member,config)));
             clock.advance(config.invitationCooldownSeconds());get(repo.invite(leader,member,config));clock.advance(config.invitationSeconds());
             final UUID id=clan.id();assertThrows(ExecutionException.class,()->get(repo.accept(member,id,leader,3)));
@@ -86,13 +86,13 @@ class ClanRepositoryTest {
         try(var storage=new SqliteStorage(directory.resolve("data.db"))){
             var repo=new ClanRepository(storage,clock);var clan=get(repo.create(leader,"TestClan",config));get(repo.create(foreign,"Foreign",config));
             for(UUID id:List.of(a,b)){get(repo.invite(leader,id,config));get(repo.accept(id,clan.id(),leader,5));}
-            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,b,"kick")));
-            get(repo.memberAction(leader,a,"promote"));get(repo.memberAction(leader,b,"promote"));
-            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,b,"kick")));
-            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,leader,"kick")));
-            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,b,"demote")));
-            assertThrows(ExecutionException.class,()->get(repo.memberAction(leader,foreign,"kick")));
-            get(repo.memberAction(leader,b,"demote"));get(repo.memberAction(a,b,"kick"));
+            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,b,"kick",config)));
+            get(repo.memberAction(leader,a,"promote",config));get(repo.memberAction(leader,b,"promote",config));
+            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,b,"kick",config)));
+            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,leader,"kick",config)));
+            assertThrows(ExecutionException.class,()->get(repo.memberAction(a,b,"demote",config)));
+            assertThrows(ExecutionException.class,()->get(repo.memberAction(leader,foreign,"kick",config)));
+            get(repo.memberAction(leader,b,"demote",config));get(repo.memberAction(a,b,"kick",config));
             assertEquals(2,get(repo.own(leader)).members().size());
         }
     }

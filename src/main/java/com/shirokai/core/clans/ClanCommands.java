@@ -16,7 +16,8 @@ public final class ClanCommands {
     public ClanCommands(Supplier<CoreRuntime> runtime){this.runtime=runtime;}
     public void register(CommandDispatcher<ServerCommandSource> dispatcher){
         if(dispatcher.getRoot().getChild("clan")!=null){org.slf4j.LoggerFactory.getLogger("shirokai-core").warn("[clans] /clan já existe; comando do Core não registrado");return;}
-        var root=literal("clan").executes(c->execute(c.getSource(),(service,id)->service.own(id)));
+        var root=literal("clan").executes(c->openMenu(c.getSource()));
+        root.then(literal("menu").executes(c->openMenu(c.getSource())));
         root.then(literal("info").executes(c->execute(c.getSource(),(service,id)->service.own(id))));
         root.then(literal("members").executes(c->execute(c.getSource(),(service,id)->service.own(id))));
         root.then(literal("create").then(argument("name",StringArgumentType.greedyString()).executes(c->execute(c.getSource(),(service,id)->{
@@ -49,6 +50,7 @@ public final class ClanCommands {
         root.then(literal("disband").executes(c->execute(c.getSource(),(service,id)->service.disband(id,false).thenApplyAsync(clan -> {
             c.getSource().sendFeedback(()->Text.literal("Confirme com /clan disband confirm em "+service.config().confirmationSeconds()+" segundos."),false);return clan;
         },c.getSource().getServer())))
+            .then(literal("cancel").executes(c->execute(c.getSource(),(service,id)->service.cancelDisband(id))))
             .then(literal("confirm").executes(c->execute(c.getSource(),(service,id)->service.disband(id,true)))));
         root.then(literal("invites").executes(c -> {
             var source=c.getSource();var core=runtime.get();
@@ -58,6 +60,11 @@ public final class ClanCommands {
             },source.getServer());return 1;
         }));
         dispatcher.register(root);
+    }
+    private int openMenu(ServerCommandSource source){
+        var core=runtime.get();if(source.getPlayer()==null){source.sendError(Text.literal("/clan exige um jogador"));return 0;}
+        if(core==null||!core.running("clans")){source.sendError(Text.literal("Clãs indisponíveis"));return 0;}
+        ClanMenu.open(source.getPlayer(),core.clans());return 1;
     }
     private int execute(ServerCommandSource source,BiFunction<ClanService,UUID,CompletableFuture<ClanSnapshot>> action){
         var core=runtime.get();

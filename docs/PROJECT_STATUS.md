@@ -1,93 +1,93 @@
-# Estado real do projeto — 0.4.0-dev
+# Estado real do projeto — 0.5.0-dev
 
 ## Situação
 
-Núcleo de clãs da fase4 implementado por comandos, com infraestrutura e títulos/perfil
-anteriores preservados. Projeto completo NÃO entregue. Interfaces/estilos de clãs,
-chat, TAB, scoreboard visual e integrações completas continuam pendentes.
+Menus de clãs, matriz configurável de ações e identificação nativa de clã no /perfil
+implementados. Projeto completo NÃO entregue: chat/moderação, estilos avançados,
+TAB, scoreboard visual, integrações completas e validação com cliente real pendentes.
+SchemaSQLite3 preservado sem migração de versão nesta etapa.
 
-## GitHub
+## Implementado
 
-O usuário autorizou salvar o progresso e continuar. Base0.3 enviada à branch main em
-89117d0 (feat: bootstrap Shirokai Core with persisted titles and profile GUI).
-Esta etapa0.4 é salva em um commit separado na mesma branch, sem reescrever histórico.
-Não há publicação de ambiente, release ou envio de dados/worlds/bancos ao GitHub.
-CI compila build/testes/smokeClasses; execução remota do workflow não foi verificada.
+- /clan e /clan menu abrem container vanilla9x6, sem mod obrigatório no cliente.
+- Páginas de clã, membros/cargos, convites recebidos, convite para jogadores online,
+  gestão do membro, solicitação de transferência e confirmação de exclusão.
+- Convite pode ser aceito/recusado no menu com validação transacional existente.
+- Transferir exige confirmação do líder e aceitação separada pelo destinatário.
+- Excluir exige duas telas/ações e confirmação no banco; cancelar remove confirmação persistente.
+- Itens são ícones, sem transferências de inventário; ações de outro usuário, tela
+  fechada, slots inválidos, swaps/shift/clone/throw/craft são bloqueadas.
+- Ações de tela são vinculadas ao ID do clã exibido. ClanRepository.scoped valida
+  associação e ID na mesma transação; tela antiga não atua sobre novo clã.
+- roleActions em clans.json configura invite/kick/promote/demote/rename/tag por cargo.
+  Liderança e hierarquia permanecem invariantes; autorização usa config/cargo atuais.
+- ClanTitle deriva título CLAN do ID/associação/sigla nativos, sem concessão artificial.
+- /perfil mostra clã atual e oferece sigla como título visual único ou uma das duas
+  identificações totais de chat. Ordem ROLE→SPECIAL→CLAN e prioridades preservadas.
+- Leave/kick/disband limpam a seleção de clã na mesma transação da associação.
+  SaveTitles também valida associação real e sigla no SQL, bloqueando reequipes antigos/forjados.
+- Nome/display da identificação acompanha rename/tag, mantendo ID estável.
+- Cache de associação online atualiza por eventos do serviço e limpa no disconnect;
+  não faz SQLite por tick. Títulos carregam associação antes de view/equip.
 
-## Implementado nesta etapa
-
-- ClanConfig/ClanService/ClanRepository e módulo clans com dependências storage/permissions.
-- clans.json validado, defaults preservados e reload atômico junto de core/titles.
-- Criação gratuita com permissão/tempo mínimo/cooldown; nome separado de sigla manual.
-- Nome/sigla únicos sem caixa e cooldowns independentes; identidade não perde membros.
-- Associação única por UUID; cargos líder/oficial/membro e ações com hierarquia protegida.
-- Convites persistentes, prazos, limites, recusa/cancelamento e notificação no join.
-- Aceitação transacional com capacidade atual do líder e proteção contra troca de líder.
-- VIP expirado/limite reduzido não remove membros; só bloqueia novas entradas.
-- Transferência com solicitação/aceitação/recusa/prazo; nenhuma transferência por offline.
-- Exclusão exige pedido e confirmação explícita com prazo e mesmo líder.
-- Histórico e auditoria na mesma transação; falha de auditoria reverte mutação.
-- Schema3 com liderança como membro por FK composta diferida e backup pré-upgrade1/2.
-- API LuckPerms prepara dados do líder offline antes de calcular permissões na thread do servidor.
-- Comandos /clan, info, members, create, tag, rename, invite, invites, accept, decline,
-  cancel, leave, kick, promote, demote, transfer, transferaccept, transferdecline,
-  disband e disband confirm. Comando de terceiro não é sobrescrito.
-
-## Validação final
+## Verificações executadas
 
 | Verificação | Resultado |
 |---|---|
-| python3 tools/gradle_cloud.py build smokeClasses | PASSOU, Java21 e JAR remapeado |
-| JUnit | 41 executados, 0 falhas, 0 erros, 0 ignorados |
-| python3 tools/server_smoke.py --accept-eula | 26 verificações funcionais passaram em três boots reais |
-| Clãs no Fabric real | CLAN_SMOKE_PASS: mesmo serviço/JDBC com provedor de permissões de teste |
-| Capacidade/concorrência | Última vaga não duplica associação; redução não expulsa; recuperação libera |
-| Liderança | Transferência aceita, limite menor sem expulsão, confirmação antiga invalidada |
-| Segurança interna | Membro não expulsa, oficial não promove/expulsa líder ou outro oficial |
-| Expiração | Convite, transferência e confirmação vencidos rejeitados |
-| Identidade | Sigla manual, nomes/siglas duplicados e cooldowns independentes testados |
-| Atomicidade | Falha de auditoria reverte criação/identidade; títulos anteriores continuam testados |
-| Migração | Upgrade2→3 preserva título/revisão e gera backup legível schema2 |
-| Regressão de perfil | PROFILE_GUI_SMOKE_PASS e regras anteriores preservadas |
-| Shutdown | stop, mundos salvos, módulos STOPPED e Gradle exit0 |
-| JAR | Versão0.4.0-dev; classes do mod de teste ausentes |
+| python3 tools/gradle_cloud.py build smokeClasses | PASSOU, Java21 e remap do JAR |
+| JUnit | 45 executados, 0 falhas, 0 erros, 0 ignorados |
+| python3 tools/server_smoke.py --accept-eula | 27 verificações funcionais passaram em três boots reais |
+| ClanMenuSmoke | CLAN_MENU_SMOKE_PASS |
+| Menu: convite/membro/cargo | Aceitação, listagem e promoção passaram |
+| Menu: transferência | Não solicita antes de confirmar; sucessor aceita separadamente |
+| Menu: exclusão | Primeiro clique não exclui; cancelar invalida pedido; segundo fluxo confirmado exclui |
+| Itens/ownership | Outro usuário e transferências bloqueados; inventário preservado; tela fechada inutilizável |
+| Escopo antigo | Troca de clã faz mutação antiga falhar sem alterar associação nova |
+| Matriz de ações | Regras configuráveis aplicadas sem permitir operar contra líder/pares |
+| Identificação CLAN | Duas vagas compartilhadas, título único e outsider rejeitado |
+| Persistência | Leave/kick/disband limpam tag atomicamente e save posterior forjado é rejeitado |
+| Regressões | Perfil, núcleo de clãs, reload, backup, restart e schema futuro passaram |
+| Artefato | ClanMenu presente e mod de teste ausente no JAR0.5 |
 | Cliente real/login/LuckPerms Fabric | NÃO EXECUTADOS |
 | Cobblemon/Impactor/Dex/PAPI | Ainda não implementados/validados |
 
-Suites anteriores (31) preservadas; ClanRepositoryTest(7) e ClanServiceTest(3) adicionadas.
-O teste de clãs usa UUIDs e provedor de permissões de teste para simular VIP, não uma
-instalação de LuckPerms Fabric. O teste de perfil usa jogadores sintéticos/conexão
-sem transporte. Não representam validação de login, rede ou aparência com cliente real.
+41 testes anteriores preservados; ClanIntegrationTest(4) adicionada.
+Smokes usam servidor Fabric real com ServerPlayerEntity sintéticos/conexão sem
+transporte e provedores de permissões de teste. Não comprovam aparência, rede,
+autenticação ou contextos reais de LuckPerms. Não foi desativado online-mode.
 
 ## Artefato e evidências
 
-`build/libs/shirokai-core-0.4.0-dev.jar`
+JAR: `build/libs/shirokai-core-0.5.0-dev.jar`
 
-SHA-256: `0c2362e3ddd04e5682b3694189dcb50ac4c392b00f2f1b4bc484a1e6f9c630e2`
+SHA-256: `f5cbdfdc9fc0e4008aa1d8374bcae03754a5cc8041950d66244b48ceaa7fa76f`
 
 JUnit: `build/reports/tests/test/index.html`.
-Smoke: `build/server-smoke/result.json`, logs first-boot/restart/storage-failure.
-Source set smoke: testes isolados, nunca incluídos no JAR de produção.
+Resultado: `build/server-smoke/result.json`.
+Logs: `build/server-smoke/first-boot.log`, `restart.log`, `storage-failure.log`.
+Source set smoke nunca é incluído no artefato de produção. Todos os servidores
+foram parados com stop e os dados temporários dos smokes são removidos.
 Artefato de desenvolvimento, NÃO release estável.
 
-## Limitações e próximos passos
+## Pendências
 
-- Menus, estilos visuais e configuração da matriz de ações internas ainda pendentes;
-  os cargos têm regras fixas nesta versão, documentadas em CLANS.
-- Chat de clã e títulos CLAN no /perfil aguardam integrações reais; não simulados.
-- Ferramentas administrativas de inspeção/correção de clãs ainda pendentes.
-- Capacidade usa snapshot de permissões na thread do servidor antes de enfileirar
-  a transação; liderança é reconferida no banco. Não há transação distribuída com LuckPerms.
-- Minecraft dev registrou falha de busca de chaves Yggdrasil; login online não validado.
-  Autenticação não foi desativada. Runtime LuckPerms e contextos do servidor real pendentes.
-- Clãs não fazem SQL por tick. Registros expirados podem permanecer para manutenção futura.
-- Gradientes/animações/condições avançadas, cargo/clã/treinador no painel, eventos LP,
-  renderizadores TAB/scoreboard/chat e integrações externas continuam no plano.
+Editor textual gráfico de nome/sigla (atuais comandos mostrados no painel), listagem
+gráfica de convites enviados, estilos por permissão, ferramentas administrativas de
+clãs, chat integrado a moderação/ignore/mute. Cargo real/dados do treinador no perfil,
+eventos LuckPerms específicos, integrações e renderizadores futuros continuam no plano.
+Títulos CLAN não podem ser declarados no JSON nem concedidos pelo admin; só associação real.
+Matriz roleActions substitui todas as regras quando fornecida; campo ausente usa defaults.
+Ainda há falha observada na rede de chaves Yggdrasil; login online não validado.
 
 ## Arquivos desta etapa
 
-clans/*, storage/ClanSchema.java, SqliteStorage.java, PermissionService/LuckPermsPermissions,
-CoreRuntime/ShirokaiCore/CoreConfig, build.gradle, testes clans/*, smoke/ClanSmoke,
-ProfileSmoke, tools/server_smoke.py, .gitattributes e documentação.
-REQUIREMENTS original foi preservado; atributo de whitespace aceita os CRLF originais.
-Detalhes de uso: CLANS.md. Próximos passos: NEXT_STEPS.md.
+ClanMenu, ClanPolicy, ClanConfig/Repository/Service/Commands, ClanTitle, TitleDefinition/
+Catalog/Rules/Service, ProfileMenu/Commands, CoreRuntime, SqliteStorage.saveTitles,
+ClanIntegrationTest, ClanMenuSmoke/ProfileSmoke, tools/server_smoke.py, build.gradle e docs.
+Não foram adicionadas dependências externas ou alterados arquivos de terceiros.
+
+## GitHub e continuidade
+
+Progresso anterior está na branch main (7a7eab1 e 89117d0). Esta etapa será salva em
+commit separado conforme autorização persistente do usuário, sem reescrever histórico.
+Nenhuma publicação de ambiente/release foi solicitada ou realizada. Ver NEXT_STEPS.

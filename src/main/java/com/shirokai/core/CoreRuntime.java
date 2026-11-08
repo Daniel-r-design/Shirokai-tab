@@ -77,6 +77,11 @@ public final class CoreRuntime implements AutoCloseable {
         modules.register(module("clans", Set.of("storage", "permissions"), () -> {
             ClanConfig clanConfig = ClanConfig.load(FabricLoader.getInstance().getConfigDir().resolve("shirokai-core/clans.json"));
             clans = new ClanService(new ClanRepository(storage, java.time.Clock.systemUTC()), permissions, server, clanConfig);
+            clans.cacheOnline(id->server.getPlayerManager().getPlayer(id)!=null);
+            if(titles!=null){
+                titles.bindClans(id->clans.cached(id).flatMap(ClanTitle::from),id->clans.membership(id).thenApply(value->null),id->clans.cached(id).map(ClanSnapshot::name));
+                clans.onChange(affected->affected.forEach(titles::refreshCached));
+            }
         }, () -> {}));
         modules.register(module("administration", Set.of("permissions"), () -> {}, () -> {}));
         for (String id : new String[]{"storage", "permissions", "placeholders", "titles", "profiles", "clans", "administration"}) {
@@ -110,7 +115,7 @@ public final class CoreRuntime implements AutoCloseable {
             if (error != null) logger.warn("[titles] Falha ao carregar perfil " + player, error);
         });
     }
-    public void playerLeft(java.util.UUID player) { if (titles != null) titles.forget(player); }
+    public void playerLeft(java.util.UUID player) { if (titles != null) titles.forget(player); if(clans!=null)clans.forget(player); }
     public void tick() {
         if (running("titles") && ++titleTicks >= 100) { titleTicks = 0; titles.revalidateCached(); }
     }

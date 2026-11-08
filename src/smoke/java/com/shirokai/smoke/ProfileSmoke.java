@@ -31,6 +31,7 @@ public final class ProfileSmoke implements ModInitializer {
     private boolean running;
     @Override public void onInitialize() {
         new ClanSmoke().onInitialize();
+        new ClanMenuSmoke(this::until).onInitialize();
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             tick++;
             for (Wait wait : List.copyOf(waits)) {
@@ -59,7 +60,7 @@ public final class ProfileSmoke implements ModInitializer {
         var result = new CompletableFuture<Void>(); waits.add(new Wait(condition, tick + 100, result)); return result;
     }
     private static void check(boolean value, String error) { if (!value) throw new AssertionError(error); }
-    private static ServerPlayerEntity player(MinecraftServer server, String name) {
+    static ServerPlayerEntity player(MinecraftServer server, String name) {
         var profile = new GameProfile(UUID.randomUUID(), name);
         var player = new ServerPlayerEntity(server, server.getOverworld(), profile, SyncedClientOptions.createDefault());
         var connection = new ClientConnection(NetworkSide.SERVERBOUND) {

@@ -1,4 +1,4 @@
-# Permissões 0.4.0-dev
+# Permissões 0.5.0-dev
 
 LuckPerms é a fonte de verdade quando presente e inicializado. O adaptador usa API 5.4,
 usuário carregado e dados de permissão com contextos atuais. Não retém resultado de
@@ -48,3 +48,9 @@ Cargos internos de clã não substituem LuckPerms.
 valida seu desbloqueio e a permissão configurada. ROLE exige permission; nunca atribui
 esse grupo ao jogador. grant não ignora a permissão exigida por um título.
 Detalhes e limites de chat em TITLES.md.
+
+
+roleActions em clans.json controla invite/kick/promote/demote/rename/tag por cargo
+interno. Não concede grupos LuckPerms. Transferência/exclusão só por líder e com
+confirmação; regras de hierarquia e clã da tela são reconferidas na transação.
+Identificação CLAN deriva de associação nativa, nunca de concessão administrativa.

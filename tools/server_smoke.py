@@ -71,13 +71,15 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         server.wait('Done (')
         server.command('shirokaicore status', 'SQLite=READY')
         server.command('shirokaicore modules', 'administration=RUNNING')
-        server.command('shirokaicore version', 'Shirokai Core 0.4.0-dev')
+        server.command('shirokaicore version', 'Shirokai Core 0.5.0-dev')
         server.command('shirokaicore permissions', 'vanilla-op4')
         server.command('shirokaicore placeholders %shirokai:online%/%shirokai:dollars%', '0/N/D')
         server.command('shirokaicore debug', 'SQLite integrity_check=ok')
         checks += ['real Fabric startup', 'module status', 'version', 'permission fallback', 'literal placeholders', 'SQLite integrity']
         server.command('shirokai-profile-smoke', 'PROFILE_GUI_SMOKE_PASS')
         checks.append('native menu server-side interactions with synthetic players')
+        server.command('shirokai-clan-menu-smoke', 'CLAN_MENU_SMOKE_PASS')
+        checks.append('native clan menus invites roles transfer and two-step deletion')
         server.command('shirokai-clan-smoke', 'CLAN_SMOKE_PASS')
         checks.append('native clan transactions limits transfer and confirmed disband')
         server.command('clan', '/clan exige um jogador')
@@ -160,6 +162,6 @@ with tempfile.TemporaryDirectory(prefix='runtime-', dir=reports) as tmp:
         assert connection.execute('SELECT count(*) FROM admin_audit').fetchone()[0] >= 2
     checks += ['storage failure isolated from server and placeholders', 'future schema preserved']
 
-result = {'passed': checks, 'count': len(checks), 'not_tested': ['player connections', 'LuckPerms runtime', 'Cobblemon', 'Impactor', 'visual GUI and packets from a real client', 'TAB/scoreboard rendering', 'clan menus/styles and chat']}
+result = {'passed': checks, 'count': len(checks), 'not_tested': ['player connections', 'LuckPerms runtime', 'Cobblemon', 'Impactor', 'visual GUI and packets from a real client', 'TAB/scoreboard rendering', 'clan styles and chat']}
 (reports / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))

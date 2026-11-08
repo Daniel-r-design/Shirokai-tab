@@ -26,3 +26,7 @@ Clãs: docs/CLANS.md. Schema3 usa líder como membro e associação global únic
 Nunca expulsar membros ao reduzir limite. Transferência/exclusão exigem confirmações.
 O usuário autorizou salvar progresso no GitHub nesta tarefa; não confundir com
 publicação de ambiente ou release estável. Preservar código e histórico remotos.
+
+Menus de clã devem usar ClanService.scoped(idExibido), nunca agir silenciosamente
+sobre clã novo a partir de tela antiga. Identificação CLAN exige associação real e
+limpeza transacional em leave/kick/disband. Namespace clan_ é reservado e não concedível.

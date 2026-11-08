@@ -1,5 +1,16 @@
 # Histórico
 
+## 0.5.0-dev — menus e identificação de clãs
+
+- Menus nativos para clã, membros/cargos, convite/aceitação e confirmações.
+- Cancelamento revoga confirmação de exclusão no banco.
+- Matriz de ações por cargo configurável, com invariantes de liderança/hierarquia.
+- Ações de menus vinculadas ao ID do clã exibido, validadas na transação.
+- Título CLAN dinâmico e clã atual no /perfil, respeitando duas identificações totais.
+- Leave/kick/disband removem seleção CLAN atomicamente; save bloqueia falsificação.
+- Cache online atualizado por eventos do serviço sem SQL por tick.
+- Testes de integração de regras e menus em servidor real com jogadores sintéticos.
+
 ## 0.4.0-dev — núcleo de clãs e GitHub
 
 - Código0.3 salvo na branchmain do GitHub (89117d0), conforme pedido do usuário.

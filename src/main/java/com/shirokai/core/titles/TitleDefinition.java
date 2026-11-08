@@ -11,7 +11,8 @@ public record TitleDefinition(String id, String name, String display, String des
         if (category == null) throw new IllegalArgumentException("Categoria ausente: " + id);
         if (permission != null && !permission.matches("[a-zA-Z0-9_.-]{1,128}")) throw new IllegalArgumentException("Permissão inválida: " + id);
         if (category == Category.ROLE && permission == null) throw new IllegalArgumentException("Cargo exige permissão LuckPerms: " + id);
-        // Native clan membership integration will provide these titles in the clans phase.
-        if (category == Category.CLAN) throw new IllegalArgumentException("Títulos de clã exigem módulo de clãs ainda não implementado");
+        if (category == Category.CLAN && (!id.matches("clan_[0-9a-f-]{36}") || permission!=null || unlockedByDefault))
+            throw new IllegalArgumentException("Título de clã deve ser derivado de associação nativa");
+        if (category != Category.CLAN && id.startsWith("clan_")) throw new IllegalArgumentException("Prefixo clan_ reservado");
     }
 }

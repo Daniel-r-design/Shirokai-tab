@@ -10,7 +10,16 @@ import java.util.concurrent.CompletableFuture;
 public final class ClanRepository {
     private final SqliteStorage storage;
     private final Clock clock;
-    public ClanRepository(SqliteStorage storage,Clock clock) { this.storage=storage;this.clock=clock; }
+    private final UUID expectedClan;
+    public ClanRepository(SqliteStorage storage,Clock clock) { this(storage,clock,null); }
+    private ClanRepository(SqliteStorage storage,Clock clock,UUID expectedClan){this.storage=storage;this.clock=clock;this.expectedClan=expectedClan;}
+    public ClanRepository scoped(UUID id){return new ClanRepository(storage,clock,Objects.requireNonNull(id));}
+    private <T> CompletableFuture<T> mutation(UUID actor,SqliteStorage.DatabaseWork<T> work){
+        return storage.transact(c->{
+            if(expectedClan!=null)require(clanOf(c,actor).equals(expectedClan),"Clã mudou desde a abertura do menu; atualize a tela");
+            return work.run(c);
+        });
+    }
     private static PreparedStatement prepare(Connection c,String sql,Object...args) throws SQLException {
         var s=c.prepareStatement(sql);
         for(int i=0;i<args.length;i++)s.setObject(i+1,args[i] instanceof UUID?args[i].toString():args[i]);
@@ -47,10 +56,25 @@ public final class ClanRepository {
     private static ClanSnapshot own(Connection c,UUID actor) throws SQLException { return snapshot(c,clanOf(c,actor)); }
     private static void leader(ClanSnapshot clan,UUID actor) {require(clan.leader().equals(actor),"Somente o líder pode executar esta ação");}
     private static void manage(ClanSnapshot clan,UUID actor) {require(clan.members().get(actor)!=ClanSnapshot.Role.MEMBER,"Somente líder/oficial pode executar esta ação");}
+    private static void clearClanSelection(Connection c,UUID player,UUID clan)throws SQLException{
+        String title="clan_"+clan;
+        update(c,"UPDATE title_profiles SET selected_visual=CASE WHEN selected_visual=? THEN NULL ELSE selected_visual END,revision=revision+1 WHERE player_uuid=? AND (selected_visual=? OR EXISTS(SELECT 1 FROM chat_identifications WHERE player_uuid=? AND title_id=?))",title,player,title,player,title);
+        update(c,"DELETE FROM chat_identifications WHERE player_uuid=? AND title_id=?",player,title);
+    }
     private void history(Connection c,UUID clan,UUID actor,String action,String details) throws SQLException {
         update(c,"INSERT INTO clan_history(clan_id,actor_uuid,action,details,created_at) VALUES(?,?,?,?,?)",clan,actor,action,details,clock.millis());
         update(c,"INSERT INTO admin_audit(actor_uuid,action,created_at) VALUES(?,?,?)",actor,"clan "+action+" "+clan+" "+details,java.time.Instant.ofEpochMilli(clock.millis()).toString());
     }
+    public CompletableFuture<Optional<ClanSnapshot>> membership(UUID player){return storage.transact(c->{
+        String id=text(c,"SELECT clan_id FROM clan_members WHERE player_uuid=?",player);
+        return id==null?Optional.empty():Optional.of(snapshot(c,UUID.fromString(id)));
+    });}
+    public record TransferOffer(UUID clan,UUID from,long expiresAt){}
+    public CompletableFuture<Optional<TransferOffer>> transferOffer(UUID player){return storage.transact(c->{
+        try(var s=prepare(c,"SELECT clan_id,from_uuid,expires_at FROM clan_transfers WHERE to_uuid=? AND expires_at>?",player,clock.millis());var rows=s.executeQuery()){
+            return rows.next()?Optional.of(new TransferOffer(UUID.fromString(rows.getString(1)),UUID.fromString(rows.getString(2)),rows.getLong(3))):Optional.empty();
+        }
+    });}
     public CompletableFuture<Map<String,Long>> invitations(UUID player) {
         return storage.transact(c -> {
             var result = new LinkedHashMap<String,Long>();
@@ -63,7 +87,7 @@ public final class ClanRepository {
     public CompletableFuture<ClanSnapshot> own(UUID player) {return storage.transact(c->own(c,player));}
     public CompletableFuture<ClanSnapshot> find(String name) {return storage.transact(c->snapshot(c,lookup(c,name)));}
     public CompletableFuture<ClanSnapshot> create(UUID actor,String name,ClanConfig config) {
-        return storage.transact(c->{
+        return mutation(actor,c->{
             require(text(c,"SELECT clan_id FROM clan_members WHERE player_uuid=?",actor)==null,"Jogador já pertence a um clã");
             require(number(c,"SELECT next_at FROM clan_creation_cooldowns WHERE player_uuid=?",actor)<=clock.millis(),"Cooldown de criação ativo");
             require(text(c,"SELECT id FROM clans WHERE name_key=?",ClanConfig.key(name))==null,"Nome de clã já utilizado");
@@ -75,8 +99,8 @@ public final class ClanRepository {
         });
     }
     public CompletableFuture<ClanSnapshot> identity(UUID actor,String value,boolean tag,ClanConfig config) {
-        return storage.transact(c->{
-            var clan=own(c,actor);leader(clan,actor);long now=clock.millis();
+        return mutation(actor,c->{
+            var clan=own(c,actor);ClanPolicy.require(clan,actor,tag?"tag":"rename",config);long now=clock.millis();
             require(now>=(tag?clan.nextTagEdit():clan.nextNameEdit()),"Cooldown de alteração ativo");
             require(!value.equals(tag?clan.tag():clan.name()),"Identidade não foi alterada");
             String column=tag?"tag":"name", cooldown=tag?"next_tag_edit":"next_name_edit";
@@ -87,8 +111,8 @@ public final class ClanRepository {
         });
     }
     public CompletableFuture<ClanSnapshot> invite(UUID actor,UUID target,ClanConfig config) {
-        return storage.transact(c->{
-            var clan=own(c,actor);manage(clan,actor);long now=clock.millis();
+        return mutation(actor,c->{
+            var clan=own(c,actor);ClanPolicy.require(clan,actor,"invite",config);long now=clock.millis();
             require(text(c,"SELECT clan_id FROM clan_members WHERE player_uuid=?",target)==null,"Convidado já pertence a um clã");
             require(number(c,"SELECT next_at FROM clan_invite_cooldowns WHERE clan_id=? AND actor_uuid=? AND target_uuid=?",clan.id(),actor,target)<=now,"Cooldown de convite ativo");
             require(number(c,"SELECT COUNT(*) FROM clan_invites WHERE clan_id=? AND expires_at>?",clan.id(),now)<config.maximumInvitations(),"Limite de convites pendentes atingido");
@@ -100,7 +124,7 @@ public final class ClanRepository {
         });
     }
     public CompletableFuture<ClanSnapshot> accept(UUID actor,UUID clanId,UUID expectedLeader,int limit) {
-        return storage.transact(c->{
+        return mutation(actor,c->{
             var clan=snapshot(c,clanId);require(clan.leader().equals(expectedLeader),"Liderança mudou; tente aceitar novamente");
             require(text(c,"SELECT clan_id FROM clan_members WHERE player_uuid=?",actor)==null,"Jogador já pertence a um clã");
             require(number(c,"SELECT expires_at FROM clan_invites WHERE clan_id=? AND target_uuid=?",clanId,actor)>clock.millis(),"Convite ausente ou expirado");
@@ -111,32 +135,36 @@ public final class ClanRepository {
         });
     }
     public CompletableFuture<ClanSnapshot> decline(UUID actor,String name) {
-        return storage.transact(c->{UUID id=lookup(c,name);require(update(c,"DELETE FROM clan_invites WHERE clan_id=? AND target_uuid=?",id,actor)==1,"Convite não encontrado");history(c,id,actor,"decline","");return snapshot(c,id);});
+        return mutation(actor,c->{UUID id=lookup(c,name);require(update(c,"DELETE FROM clan_invites WHERE clan_id=? AND target_uuid=?",id,actor)==1,"Convite não encontrado");history(c,id,actor,"decline","");return snapshot(c,id);});
     }
-    public CompletableFuture<ClanSnapshot> cancel(UUID actor,UUID target) {
-        return storage.transact(c->{var clan=own(c,actor);manage(clan,actor);require(update(c,"DELETE FROM clan_invites WHERE clan_id=? AND target_uuid=?",clan.id(),target)==1,"Convite não encontrado");history(c,clan.id(),actor,"cancel-invite",target.toString());return clan;});
+    public CompletableFuture<ClanSnapshot> cancel(UUID actor,UUID target,ClanConfig config) {
+        return mutation(actor,c->{var clan=own(c,actor);ClanPolicy.require(clan,actor,"invite",config);require(update(c,"DELETE FROM clan_invites WHERE clan_id=? AND target_uuid=?",clan.id(),target)==1,"Convite não encontrado");history(c,clan.id(),actor,"cancel-invite",target.toString());return clan;});
     }
     public CompletableFuture<ClanSnapshot> leave(UUID actor) {
-        return storage.transact(c->{var clan=own(c,actor);require(!clan.leader().equals(actor),"Líder deve transferir liderança ou confirmar exclusão");update(c,"DELETE FROM clan_members WHERE player_uuid=?",actor);update(c,"DELETE FROM clan_transfers WHERE clan_id=? AND to_uuid=?",clan.id(),actor);history(c,clan.id(),actor,"leave","");return snapshot(c,clan.id());});
+        return mutation(actor,c->{var clan=own(c,actor);require(!clan.leader().equals(actor),"Líder deve transferir liderança ou confirmar exclusão");clearClanSelection(c,actor,clan.id());update(c,"DELETE FROM clan_members WHERE player_uuid=?",actor);update(c,"DELETE FROM clan_transfers WHERE clan_id=? AND to_uuid=?",clan.id(),actor);history(c,clan.id(),actor,"leave","");return snapshot(c,clan.id());});
     }
-    public CompletableFuture<ClanSnapshot> memberAction(UUID actor,UUID target,String action) {
-        return storage.transact(c->{
+    public CompletableFuture<ClanSnapshot> memberAction(UUID actor,UUID target,String action,ClanConfig config) {
+        return mutation(actor,c->{
             var clan=own(c,actor);require(clan.members().containsKey(target),"Jogador não pertence a este clã");require(!actor.equals(target),"Use o comando de saída para si mesmo");require(!clan.leader().equals(target),"Líder não pode ser removido/rebaixado");
+            ClanPolicy.require(clan,actor,action,config);
             switch(action) {
-                case "kick" -> {manage(clan,actor);require(clan.leader().equals(actor)||clan.members().get(target)==ClanSnapshot.Role.MEMBER,"Oficial não pode expulsar outro oficial");update(c,"DELETE FROM clan_members WHERE player_uuid=?",target);update(c,"DELETE FROM clan_transfers WHERE clan_id=? AND to_uuid=?",clan.id(),target);}
-                case "promote","demote" -> {leader(clan,actor);update(c,"UPDATE clan_members SET role=? WHERE player_uuid=?",action.equals("promote")?"OFFICER":"MEMBER",target);}
+                case "kick" -> {require(clan.leader().equals(actor)||clan.members().get(target).ordinal()>clan.members().get(actor).ordinal(),"Oficial não pode expulsar outro oficial");clearClanSelection(c,target,clan.id());update(c,"DELETE FROM clan_members WHERE player_uuid=?",target);update(c,"DELETE FROM clan_transfers WHERE clan_id=? AND to_uuid=?",clan.id(),target);}
+                case "promote","demote" -> {require(clan.leader().equals(actor)||clan.members().get(target).ordinal()>clan.members().get(actor).ordinal(),"Não é permitido alterar cargo de alguém da mesma hierarquia ou superior");update(c,"UPDATE clan_members SET role=? WHERE player_uuid=?",action.equals("promote")?"OFFICER":"MEMBER",target);}
                 default -> throw new IllegalArgumentException("Ação de membro inválida");
             }
             history(c,clan.id(),actor,action,target.toString());return snapshot(c,clan.id());
         });
     }
     public CompletableFuture<ClanSnapshot> requestTransfer(UUID actor,UUID target,ClanConfig config) {
-        return storage.transact(c->{var clan=own(c,actor);leader(clan,actor);require(!target.equals(actor)&&clan.members().containsKey(target),"Sucessor deve ser outro membro do clã");update(c,"INSERT INTO clan_transfers(clan_id,from_uuid,to_uuid,expires_at) VALUES(?,?,?,?) ON CONFLICT(clan_id) DO UPDATE SET from_uuid=excluded.from_uuid,to_uuid=excluded.to_uuid,expires_at=excluded.expires_at",clan.id(),actor,target,clock.millis()+config.confirmationSeconds()*1000);history(c,clan.id(),actor,"transfer-request",target.toString());return clan;});
+        return mutation(actor,c->{var clan=own(c,actor);leader(clan,actor);require(!target.equals(actor)&&clan.members().containsKey(target),"Sucessor deve ser outro membro do clã");update(c,"INSERT INTO clan_transfers(clan_id,from_uuid,to_uuid,expires_at) VALUES(?,?,?,?) ON CONFLICT(clan_id) DO UPDATE SET from_uuid=excluded.from_uuid,to_uuid=excluded.to_uuid,expires_at=excluded.expires_at",clan.id(),actor,target,clock.millis()+config.confirmationSeconds()*1000);history(c,clan.id(),actor,"transfer-request",target.toString());return clan;});
     }
     public CompletableFuture<ClanSnapshot> answerTransfer(UUID actor,boolean accept) {
-        return storage.transact(c->{var clan=own(c,actor);require(number(c,"SELECT expires_at FROM clan_transfers WHERE clan_id=? AND to_uuid=? AND from_uuid=?",clan.id(),actor,clan.leader())>clock.millis(),"Solicitação de transferência ausente ou expirada");if(accept){update(c,"UPDATE clan_members SET role='MEMBER' WHERE player_uuid IN (?,?)",actor,clan.leader());update(c,"UPDATE clans SET leader_uuid=? WHERE id=?",actor,clan.id());update(c,"DELETE FROM clan_disband_confirmations WHERE clan_id=?",clan.id());}update(c,"DELETE FROM clan_transfers WHERE clan_id=?",clan.id());history(c,clan.id(),actor,accept?"transfer-accept":"transfer-decline",clan.leader().toString());return snapshot(c,clan.id());});
+        return mutation(actor,c->{var clan=own(c,actor);require(number(c,"SELECT expires_at FROM clan_transfers WHERE clan_id=? AND to_uuid=? AND from_uuid=?",clan.id(),actor,clan.leader())>clock.millis(),"Solicitação de transferência ausente ou expirada");if(accept){update(c,"UPDATE clan_members SET role='MEMBER' WHERE player_uuid IN (?,?)",actor,clan.leader());update(c,"UPDATE clans SET leader_uuid=? WHERE id=?",actor,clan.id());update(c,"DELETE FROM clan_disband_confirmations WHERE clan_id=?",clan.id());}update(c,"DELETE FROM clan_transfers WHERE clan_id=?",clan.id());history(c,clan.id(),actor,accept?"transfer-accept":"transfer-decline",clan.leader().toString());return snapshot(c,clan.id());});
     }
+    public CompletableFuture<ClanSnapshot> cancelDisband(UUID actor){return mutation(actor,c->{
+        var clan=own(c,actor);leader(clan,actor);update(c,"DELETE FROM clan_disband_confirmations WHERE clan_id=?",clan.id());history(c,clan.id(),actor,"disband-cancel","");return clan;
+    });}
     public CompletableFuture<ClanSnapshot> disband(UUID actor,boolean confirm,ClanConfig config) {
-        return storage.transact(c->{var clan=own(c,actor);leader(clan,actor);if(!confirm){update(c,"INSERT INTO clan_disband_confirmations(clan_id,actor_uuid,expires_at) VALUES(?,?,?) ON CONFLICT(clan_id) DO UPDATE SET actor_uuid=excluded.actor_uuid,expires_at=excluded.expires_at",clan.id(),actor,clock.millis()+config.confirmationSeconds()*1000);history(c,clan.id(),actor,"disband-request","");}else{require(number(c,"SELECT expires_at FROM clan_disband_confirmations WHERE clan_id=? AND actor_uuid=?",clan.id(),actor)>clock.millis(),"Confirmação ausente ou expirada");history(c,clan.id(),actor,"disband",clan.name());update(c,"DELETE FROM clans WHERE id=?",clan.id());}return clan;});
+        return mutation(actor,c->{var clan=own(c,actor);leader(clan,actor);if(!confirm){update(c,"INSERT INTO clan_disband_confirmations(clan_id,actor_uuid,expires_at) VALUES(?,?,?) ON CONFLICT(clan_id) DO UPDATE SET actor_uuid=excluded.actor_uuid,expires_at=excluded.expires_at",clan.id(),actor,clock.millis()+config.confirmationSeconds()*1000);history(c,clan.id(),actor,"disband-request","");}else{require(number(c,"SELECT expires_at FROM clan_disband_confirmations WHERE clan_id=? AND actor_uuid=?",clan.id(),actor)>clock.millis(),"Confirmação ausente ou expirada");history(c,clan.id(),actor,"disband",clan.name());for(UUID member:clan.members().keySet())clearClanSelection(c,member,clan.id());update(c,"DELETE FROM clans WHERE id=?",clan.id());}return clan;});
     }
 }

@@ -12,11 +12,18 @@ public record ClanConfig(int schemaVersion, boolean creationEnabled, long minimu
         int minimumNameLength, int maximumNameLength, int minimumTagLength, int maximumTagLength,
         String namePattern, String tagPattern, Set<String> reservedNames, int defaultLimit,
         Map<String,Integer> permissionLimits, long invitationSeconds, long invitationCooldownSeconds,
-        int maximumInvitations, long confirmationSeconds) {
+        int maximumInvitations, long confirmationSeconds, Map<String,Set<String>> roleActions) {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     public ClanConfig {
         reservedNames = Set.copyOf(Objects.requireNonNull(reservedNames));
         permissionLimits = Map.copyOf(Objects.requireNonNull(permissionLimits));
+        var copied=new HashMap<String,Set<String>>();
+        Objects.requireNonNull(roleActions).forEach((role,actions)->{
+            ClanSnapshot.Role.valueOf(role);
+            if(!ClanPolicy.ACTIONS.containsAll(actions))throw new IllegalArgumentException("Ação interna desconhecida");
+            copied.put(role,Set.copyOf(actions));
+        });
+        roleActions=Map.copyOf(copied);
         if (schemaVersion != 1 || minimumPlaySeconds < 0 || creationCooldownSeconds < 0 || nameCooldownSeconds < 0 || tagCooldownSeconds < 0
                 || minimumNameLength < 1 || maximumNameLength > 64 || maximumNameLength < minimumNameLength
                 || minimumTagLength < 1 || maximumTagLength > 16 || maximumTagLength < minimumTagLength
@@ -33,7 +40,7 @@ public record ClanConfig(int schemaVersion, boolean creationEnabled, long minimu
     public static ClanConfig defaults() {
         return new ClanConfig(1,true,0,86400,604800,604800,3,32,2,5,
                 "[A-Za-z0-9 _-]+","[A-Za-z0-9]+",Set.of("admin","staff","shirokai"),20,
-                Map.of("shirokaicore.clan.limit.30",30,"shirokaicore.clan.limit.40",40,"shirokaicore.clan.limit.50",50),300,30,20,60);
+                Map.of("shirokaicore.clan.limit.30",30,"shirokaicore.clan.limit.40",40,"shirokaicore.clan.limit.50",50),300,30,20,60,Map.of("LEADER",ClanPolicy.ACTIONS,"OFFICER",Set.of("invite","kick"),"MEMBER",Set.of()));
     }
     public String name(String value) { return validate(value,minimumNameLength,maximumNameLength,namePattern); }
     public String tag(String value) { return validate(value,minimumTagLength,maximumTagLength,tagPattern); }
@@ -73,6 +80,11 @@ public record ClanConfig(int schemaVersion, boolean creationEnabled, long minimu
         if(!defaults.get("reservedNames").isJsonArray() || !defaults.get("permissionLimits").isJsonObject())throw new IllegalArgumentException("reservedNames/permissionLimits inválidos");
         for(var name:defaults.getAsJsonArray("reservedNames"))if(!name.isJsonPrimitive()||!name.getAsJsonPrimitive().isString())throw new IllegalArgumentException("Nome reservado inválido");
         for(var limit:defaults.getAsJsonObject("permissionLimits").entrySet())if(!limit.getValue().toString().matches("[0-9]{1,4}"))throw new IllegalArgumentException("Limite inválido");
+        if(!defaults.get("roleActions").isJsonObject())throw new IllegalArgumentException("roleActions deve ser objeto");
+        for(var entry:defaults.getAsJsonObject("roleActions").entrySet()){
+            if(!entry.getValue().isJsonArray())throw new IllegalArgumentException("Ações devem ser lista");
+            for(var action:entry.getValue().getAsJsonArray())if(!action.isJsonPrimitive()||!action.getAsJsonPrimitive().isString())throw new IllegalArgumentException("Ação deve ser texto");
+        }
         return GSON.fromJson(defaults,ClanConfig.class);
     }
 }

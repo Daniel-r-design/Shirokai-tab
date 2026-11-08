@@ -1,4 +1,4 @@
-# Títulos e perfil — 0.3.0-dev
+# Títulos e perfil — 0.5.0-dev
 
 ## Catálogo real
 
@@ -42,8 +42,8 @@ com as permissões reais do servidor; o Core nunca altera grupos LuckPerms.
 Campos booleanos, categoria, prioridade, ID, nome, display e descrição são obrigatórios.
 `permission` pode ser omitida; ROLE exige uma permissão. ID deve coincidir com chave.
 Até 500 títulos/256 KiB; texto é literal nesta etapa, sem parser de gradientes/MiniMessage.
-Categoria CLAN é rejeitada com diagnóstico até existir integração real com clãs.
-Não criar tags de clã fictícias ou concedê-las sem validar pertencimento.
+Categoria CLAN não pode ser declarada em titles.json: é derivada automaticamente de
+pertencimento ao clã nativo com sigla definida. IDs clan_ são reservados; veja CLANS.md.
 
 ## Entitlements e seleção
 
@@ -115,7 +115,7 @@ throw, quick-craft e pickup-all são ignorados. Slots inválidos, outro jogador 
 fechado não executam ações. Operações assíncronas não reabrem tela que o jogador já
 fechou/trocou. Itens do inventário do jogador não são transferidos para o menu.
 
-Ainda faltam painel do cargo real, clã e dados do treinador, assim como estilo de
+O clã atual já aparece no painel. Faltam cargo real e dados do treinador, assim como estilo de
 gradientes/animações do motor futuro. A interface atual não simula esses dados.
 Validação visual/rede com cliente real ainda é necessária, mesmo após teste do
 handler em servidor com jogadores sintéticos.
@@ -136,3 +136,13 @@ invalidadas online; concessões antigas permanecem guardadas, sem serem exibidas
 %shirokai:selected_title%, %shirokai:chat_tag_1%, %shirokai:chat_tag_2% usam cache
 do perfil online e retornam display literal. Dado ausente usa fallback. A sintaxe
 é do serviço nativo; registro na Fabric Placeholder API continua pendente.
+
+
+## Integração de clã0.5
+
+ClanTitle fornece um único título dinâmico do clã atual, sem registrar concessão.
+As mesmas regras de duas identificações e título único se aplicam. SQL rejeita
+clan_<UUID> de outro clã ou sem sigla; leave/kick/disband removem seleção atomicamente.
+Mudanças do serviço de clãs atualizam o cache online; view/equip carregam pertencimento
+antes de validar, para não aceitar uma permissão fictícia ou apagar escolha no join
+antes de carregar dados. Diagnóstico offline segue sem limpeza baseada em permissão ausente.

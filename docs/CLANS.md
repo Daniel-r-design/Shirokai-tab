@@ -1,7 +1,7 @@
-# Clãs nativos — 0.4.0-dev
+# Clãs nativos — 0.5.0-dev
 
-Núcleo funcional por comandos. Menus, estilos avançados, chat de clã, títulos CLAN
-e ferramentas administrativas de correção ainda não estão implementados.
+Núcleo por comandos e menus nativos; sigla integrada ao /perfil como identificação CLAN.
+Estilos avançados, chat de clã e ferramentas administrativas de correção seguem pendentes.
 
 ## Regras implementadas
 
@@ -15,7 +15,7 @@ e ferramentas administrativas de correção ainda não estão implementados.
 - Líder pode convidar, expulsar, promover, rebaixar, alterar identidade e solicitar transferências.
 - Oficial pode convidar/cancelar e expulsar membros; não expulsa outro oficial ou líder.
 - Membro pode sair; líder precisa transferir ou confirmar exclusão.
-- Matriz de ações internas ainda é fixa nesta versão; configuração por cargo está pendente.
+- Matriz de ações internas é configurável em roleActions; liderança e hierarquia são invariantes.
 - Nome/sigla têm cooldowns independentes, iniciados somente em alteração bem-sucedida.
 - Convites persistem, expiram, permitem recusa/cancelamento, têm cooldown por remetente/alvo
   e limite de pendências por clã e destinatário. Convites ativos são informados no join.
@@ -55,6 +55,7 @@ em memória, exceto schemaVersion obrigatório. Participa do reload atômico com
 | invitationCooldownSeconds | 30, por remetente/alvo |
 | maximumInvitations | 20, por clã e destinatário |
 | confirmationSeconds | 60, transferência/exclusão |
+| roleActions | LEADER: invite/kick/promote/demote/rename/tag; OFFICER: invite/kick; MEMBER: vazio |
 
 Sempre usa o maior limite permitido, pelo menos defaultLimit. Não há custo configurável:
 criação/alterações são gratuitas. Alterar clans em core.json exige reinício.
@@ -65,6 +66,7 @@ Renomear um clã preserva ID, membros, convites, progresso e histórico.
 
 ```
 /clan
+/clan menu
 /clan info
 /clan members
 /clan create <nome>
@@ -84,6 +86,7 @@ Renomear um clã preserva ID, membros, convites, progresso e histórico.
 /clan transferdecline
 /clan disband
 /clan disband confirm
+/clan disband cancel
 ```
 
 Criação exige shirokaicore.clan.create no LuckPerms. Sem LuckPerms o fallback administrativo
@@ -106,3 +109,44 @@ Schema futuro é rejeitado sem reset. Não há SQL por tick para clãs.
 Testes usam SQLite real e provedor de permissões de teste para simular VIP/expiração.
 Smoke do componente roda no Fabric real, sem autenticação falsa nem desativação de online-mode.
 Isso não equivale a testar LuckPerms Fabric instalado, interfaces de clãs ou múltiplos clientes.
+
+
+## Menus0.5
+
+/clan e /clan menu abrem menu vanilla 9x6. Páginas de perfil, membros/cargos,
+convites recebidos, jogadores online para convidar, gestão do membro e confirmações.
+Página de membros usa UUID para alvos offline e nome somente para quem está online.
+Convites: clique esquerdo aceita, direito recusa; capacidade/validade são checadas novamente.
+Transferência: líder escolhe membro e confirma solicitação; destinatário ainda deve
+aceitar em seu próprio menu. Exclusão: primeiro clique registra pedido e abre outra tela;
+segundo clique confirma. Cancelar também revoga o pedido no banco.
+Nome/sigla são orientados por comandos no painel; editor textual gráfico não implementado.
+Convites enviados podem ser cancelados por comando; listagem gráfica de enviados pendente.
+
+Menus são somente leitura de itens, com bloqueio de swaps/shift/throw/clone/craft,
+outro usuário e tela fechada. Toda ação com clã é vinculada ao ID mostrado na tela:
+se o jogador mudou de clã, o banco rejeita a ação antiga dentro da transação.
+Mesmo se um botão antigo estiver visível após mudar cargo/configuração, a ação usa
+configuração e cargo atuais, sem confiar no estado visual anterior.
+
+roleActions é mapa de LEADER/OFFICER/MEMBER para listas de invite/kick/promote/demote/rename/tag.
+A chave roleActions substitui a matriz inteira quando fornecida; omita para usar defaults.
+Pode restringir líder nas ações configuráveis; transferir/excluir continuam exclusivas do líder.
+Ninguém pode expulsar/rebaixar líder, operar contra outro clã ou agir sobre si mesmo
+por comandos de alvo. Não líder só pode gerir alvos de hierarquia inferior: configurar
+promote para oficial permite promover membro; não autoriza rebaixar/expulsar um par.
+
+## Identificação nativa de clã
+
+Depois de escolher sigla, o perfil oferece um título CLAN derivado: id clan_<UUID>.
+Nome segue o clã e display é [SIGLA]; não há concessão manual nem dados fictícios.
+Participa das mesmas duas vagas totais de chat (ROLE, SPECIAL, CLAN nessa ordem),
+ou pode ser o título visual único compartilhado pelos futuros TAB/scoreboard.
+Mudança de sigla atualiza display preservando o ID estável.
+
+Sair, ser expulso ou excluir clã limpa a seleção correspondente na mesma transação
+que remove a associação. Save de seleção também verifica associação/tag no SQL,
+impedindo que uma tela antiga reequipe uma sigla depois da saída. Cache online atualiza
+por eventos do serviço, sem ler SQLite por tick. Desconexão remove cache.
+Dados de clã aparecem no cabeçalho do /perfil mesmo antes de escolher sigla.
+Títulos CLAN continuam proibidos em titles.json: somente pertencimento nativo os produz.

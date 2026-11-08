@@ -21,10 +21,10 @@ public final class ProfileCommands {
             var source = c.getSource();
             if (!available(source)) return 0;
             ProfileMenu.open(source.getPlayer(), runtime.get().titles()); return 1;
-        }).then(literal("titulo").then(argument("id", StringArgumentType.word()).suggests((c,b) -> suggest(b)).executes(c -> {
+        }).then(literal("titulo").then(argument("id", StringArgumentType.word()).suggests((c,b) -> suggest(c.getSource(),b)).executes(c -> {
             if (!available(c.getSource())) return 0;
             return respond(c.getSource(), runtime.get().titles().equip(c.getSource().getPlayer().getUuid(), StringArgumentType.getString(c, "id"), false));
-        }))).then(literal("chat").then(argument("id", StringArgumentType.word()).suggests((c,b) -> suggest(b)).executes(c -> {
+        }))).then(literal("chat").then(argument("id", StringArgumentType.word()).suggests((c,b) -> suggest(c.getSource(),b)).executes(c -> {
             if (!available(c.getSource())) return 0;
             return respond(c.getSource(), runtime.get().titles().equip(c.getSource().getPlayer().getUuid(), StringArgumentType.getString(c, "id"), true));
         }))).then(literal("limpar").executes(c -> {
@@ -32,9 +32,9 @@ public final class ProfileCommands {
             return respond(c.getSource(), runtime.get().titles().clear(c.getSource().getPlayer().getUuid()));
         })));
     }
-    private CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggest(com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
+    private CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggest(ServerCommandSource source, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
         var core = runtime.get();
-        if (core != null && core.running("titles")) for (String id : core.titles().catalog().definitions().keySet())
+        if (core != null && core.running("titles")) for (String id : (source.getPlayer()==null?core.titles().catalog():core.titles().catalog(source.getPlayer().getUuid())).definitions().keySet())
             if (id.startsWith(builder.getRemainingLowerCase())) builder.suggest(id);
         return builder.buildFuture();
     }

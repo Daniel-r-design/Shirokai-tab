@@ -7,8 +7,11 @@ import java.util.function.BiPredicate;
 public final class TitleRules {
     public enum Availability { UNLOCKED, LOCKED, EXPIRED, UNAVAILABLE }
     private final BiPredicate<UUID, String> permissions;
-    public TitleRules(BiPredicate<UUID, String> permissions) { this.permissions = permissions; }
+    private final BiPredicate<UUID,String> clans;
+    public TitleRules(BiPredicate<UUID, String> permissions) { this(permissions,(player,title)->false); }
+    public TitleRules(BiPredicate<UUID,String> permissions,BiPredicate<UUID,String> clans){this.permissions=permissions;this.clans=clans;}
     public Availability availability(TitleDefinition title, TitleState state, long now) {
+        if (title.category()==TitleDefinition.Category.CLAN) return clans.test(state.player(),title.id())?Availability.UNLOCKED:Availability.UNAVAILABLE;
         if (title.permission() != null && !permissions.test(state.player(), title.permission())) return Availability.UNAVAILABLE;
         if (title.category() == TitleDefinition.Category.ROLE) return Availability.UNLOCKED;
         Long expiry = state.grants().get(title.id());
