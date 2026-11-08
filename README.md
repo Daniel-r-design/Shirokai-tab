@@ -16,6 +16,7 @@ Títulos, seleções e menu: [TITLES](docs/TITLES.md).
 
 Requisitos completos: [REQUIREMENTS](docs/REQUIREMENTS.md).
 Estado e evidências: [PROJECT_STATUS](docs/PROJECT_STATUS.md).
+Prompt para outro Codex: [CODEX_CONTINUATION_PROMPT](docs/CODEX_CONTINUATION_PROMPT.md).
 
 ## Desenvolvimento
 
